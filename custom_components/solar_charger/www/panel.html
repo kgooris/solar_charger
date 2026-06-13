@@ -261,12 +261,13 @@ class HAConnection {
     this.ws.send(JSON.stringify({ id, type: 'subscribe_events', event_type: 'state_changed' }));
   }
 
-  async getHistory(entityIds, hoursBack) {
-    const start = new Date(Date.now() - hoursBack * 3600000).toISOString();
+  async getHistory(entityIds, hoursBack, startIso = null, endIso = null) {
+    const start = startIso || new Date(Date.now() - hoursBack * 3600000).toISOString();
+    const end   = endIso   || new Date().toISOString();
     const r = await this.send({
       type: 'history/history_during_period',
       start_time: start,
-      end_time: new Date().toISOString(),
+      end_time: end,
       entity_ids: entityIds,
       significant_changes_only: false,
       no_attributes: true,
@@ -288,6 +289,8 @@ let states = {};
 let chart1 = null;
 let chart2 = null;
 let chart1Range = 'today';
+let chart1StartIso = null;
+let chart1EndIso = null;
 let prevSwitchState = null;
 let overviewBuilt = false;
 let _buildPromise = null;
@@ -483,8 +486,7 @@ async function buildOverviewShell() {
           <div class="chart-sub">Blauw = afname van net &nbsp;·&nbsp; Paars = teruglevering naar net &nbsp;·&nbsp; Groen = batterij laden (rechts)</div>
         </div>
         <div class="chart-leg">
-          <span><span class="ld" style="background:#3b82f6"></span>Afname net</span>
-          <span><span class="ld" style="background:#8b5cf6"></span>Teruglevering</span>
+          <span><span class="ld" style="background:linear-gradient(to right,#3b82f6,#8b5cf6)"></span>Afname (blauw) / Teruglevering (paars)</span>
           <span><span class="ld" style="background:#16a34a"></span>Batterij laden</span>
           <span><span class="ld-dash" style="border-top:2px dashed #f59e0b"></span>Drempel</span>
         </div>
@@ -493,8 +495,14 @@ async function buildOverviewShell() {
         <button class="rbtn ${chart1Range==='1h'?'on':''}" onclick="setChart1Range('1h',this)">1u</button>
         <button class="rbtn ${chart1Range==='today'?'on':''}" onclick="setChart1Range('today',this)">Vandaag</button>
         <button class="rbtn ${chart1Range==='7d'?'on':''}" onclick="setChart1Range('7d',this)">7 dagen</button>
+        <span style="font-size:10px;color:#9ca3af;margin-left:4px">of:</span>
+        <input type="date" id="c1-from">
+        <span style="font-size:11px;color:#9ca3af">→</span>
+        <input type="date" id="c1-to">
+        <button class="rbtn" onclick="applyChart1Date()" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534">Pas toe</button>
       </div>
       <canvas id="chart1" height="110"></canvas>
+      <div class="zoom-hint">💡 Scroll om in/uit te zoomen &nbsp;·&nbsp; sleep om te pannen &nbsp;·&nbsp; dubbelklik om te resetten</div>
     </div>
 
     <div class="stats">
@@ -664,19 +672,19 @@ async function renderChart1() {
   const entityIds = [cfg.p1_power_sensor];
   if (cfg.charger_power_sensor) entityIds.push(cfg.charger_power_sensor);
 
-  const history = await ha.getHistory(entityIds, hours);
+  const history = chart1StartIso
+    ? await ha.getHistory(entityIds, 0, chart1StartIso, chart1EndIso || new Date().toISOString())
+    : await ha.getHistory(entityIds, hours);
 
   const p1History  = history[cfg.p1_power_sensor] || [];
   const carHistory = cfg.charger_power_sensor ? (history[cfg.charger_power_sensor] || []) : [];
 
-  const labels = [], p1D = [], afnameD = [], terugD = [], carD = [];
+  const labels = [], p1D = [], carD = [];
   p1History.forEach(point => {
     const v = parseFloat(point.s);
     if (isNaN(v)) return;
     labels.push(new Date(point.lu * 1000).toLocaleTimeString('nl', { hour: '2-digit', minute: '2-digit' }));
     p1D.push(v);
-    afnameD.push(Math.max(0, v));
-    terugD.push(Math.min(0, v));
   });
 
   // Interpoleer laderdata naar P1-tijdstempels
@@ -706,21 +714,25 @@ async function renderChart1() {
       labels,
       datasets: [
         {
-          label: 'Afname net',
-          data: afnameD,
+          label: 'Netbalans',
+          data: p1D,
           borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59,130,246,0.15)',
-          fill: 'origin',
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: 2,
-          yAxisID: 'y',
-        },
-        {
-          label: 'Teruglevering',
-          data: terugD,
-          borderColor: '#8b5cf6',
-          backgroundColor: 'rgba(139,92,246,0.15)',
+          segment: {
+            borderColor: ctx => ctx.p0.parsed.y >= 0 ? '#3b82f6' : '#8b5cf6',
+          },
+          backgroundColor: ctx => {
+            const chart = ctx.chart;
+            const { ctx: c, chartArea } = chart;
+            if (!chartArea) return 'transparent';
+            const yZero = chart.scales.y.getPixelForValue(0);
+            const ratio = Math.max(0, Math.min(1, (yZero - chartArea.top) / (chartArea.bottom - chartArea.top)));
+            const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            grad.addColorStop(0, 'rgba(59,130,246,0.25)');
+            grad.addColorStop(Math.max(0, ratio - 0.01), 'rgba(59,130,246,0.05)');
+            grad.addColorStop(Math.min(1, ratio + 0.01), 'rgba(139,92,246,0.05)');
+            grad.addColorStop(1, 'rgba(139,92,246,0.25)');
+            return grad;
+          },
           fill: 'origin',
           tension: 0.3,
           pointRadius: 0,
@@ -766,16 +778,26 @@ async function renderChart1() {
           intersect: false,
           callbacks: {
             label: ctx => {
-              if (ctx.datasetIndex === 0 && ctx.parsed.y > 0)
-                return ` Afname net: ${Math.round(ctx.parsed.y)} W`;
-              if (ctx.datasetIndex === 1 && ctx.parsed.y < 0)
-                return ` Teruglevering: ${Math.abs(Math.round(ctx.parsed.y))} W`;
-              if (ctx.datasetIndex === 2 && ctx.parsed.y > 0)
+              if (ctx.datasetIndex === 0) {
+                const v = ctx.parsed.y;
+                if (v > 0) return ` Afname net: ${Math.round(v)} W`;
+                if (v < 0) return ` Teruglevering: ${Math.abs(Math.round(v))} W`;
+                return null;
+              }
+              if (ctx.datasetIndex === 1 && ctx.parsed.y > 0)
                 return ` Batterij laden: ${Math.round(ctx.parsed.y)} W`;
-              if (ctx.datasetIndex === 3)
+              if (ctx.datasetIndex === 2)
                 return ` Drempel: ${Math.abs(Math.round(ctx.parsed.y))} W`;
               return null;
             },
+          },
+        },
+        zoom: {
+          pan: { enabled: true, mode: 'x' },
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            mode: 'x',
           },
         },
       },
@@ -814,8 +836,22 @@ async function renderChart1() {
 
 function setChart1Range(range, btn) {
   chart1Range = range;
+  chart1StartIso = null;
+  chart1EndIso = null;
+  const f = document.getElementById('c1-from'); if (f) f.value = '';
+  const t = document.getElementById('c1-to');   if (t) t.value = '';
   document.querySelectorAll('#tab-overview .rbtn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
+  renderChart1();
+}
+
+function applyChart1Date() {
+  const from = document.getElementById('c1-from').value;
+  const to   = document.getElementById('c1-to').value;
+  if (!from && !to) return;
+  chart1StartIso = from ? new Date(from).toISOString() : null;
+  chart1EndIso   = to   ? new Date(to + 'T23:59:59').toISOString() : null;
+  document.querySelectorAll('#tab-overview .rbtn').forEach(b => b.classList.remove('on'));
   renderChart1();
 }
 
