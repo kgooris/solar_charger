@@ -479,15 +479,14 @@ async function buildOverviewShell() {
     <div class="chart-card">
       <div class="chart-head">
         <div>
-          <div class="chart-title">Verbruik / teruglevering net (excl. batterij)</div>
-          <div class="chart-sub">Onder nul = teruglevering naar net &nbsp;·&nbsp; boven nul = afname van net &nbsp;·&nbsp; zon &amp; lading apart (rechts)</div>
+          <div class="chart-title">Afname / teruglevering net</div>
+          <div class="chart-sub">Blauw = afname van net &nbsp;·&nbsp; Paars = teruglevering naar net &nbsp;·&nbsp; Groen = batterij laden (rechts)</div>
         </div>
         <div class="chart-leg">
-          <span><span class="ld" style="background:#22c55e"></span>Teruglevering</span>
-          <span><span class="ld" style="background:#ef4444"></span>Afname net</span>
-          <span><span class="ld" style="background:#f59e0b"></span>Zonnepanelen</span>
-          <span><span class="ld-dash" style="border-top:2px dashed #16a34a"></span>Batterij laden</span>
-          <span><span class="ld-dash" style="border-top:2px dashed #8b5cf6"></span>Drempel</span>
+          <span><span class="ld" style="background:#3b82f6"></span>Afname net</span>
+          <span><span class="ld" style="background:#8b5cf6"></span>Teruglevering</span>
+          <span><span class="ld" style="background:#16a34a"></span>Batterij laden</span>
+          <span><span class="ld-dash" style="border-top:2px dashed #f59e0b"></span>Drempel</span>
         </div>
       </div>
       <div class="range-btns">
@@ -558,9 +557,11 @@ async function updateOverviewDynamic() {
 
   // Status pill
   const noplug = chargerOn && v.carW < (cfg.noplug_threshold_w || 50);
+  const autoOn = getState('switch.solar_charger_automation_enabled').state === 'on';
   let pillHtml = '';
   if (noplug) pillHtml = `<span class="pill pill-noplug">⚠️ Schakelaar aan — batterij niet aangesloten</span>`;
   else if (chargerOn) pillHtml = `<span class="pill pill-on">⚡ Laden actief</span>`;
+  else if (!autoOn) pillHtml = `<span class="pill pill-off">⏸️ Automatisering niet actief — schakel in via Instellingen</span>`;
   else if (-v.p1Raw >= (cfg.min_surplus_w || 500)) pillHtml = `<span class="pill pill-wait">☀️ Overschot beschikbaar — wachten op vertraging</span>`;
   else pillHtml = `<span class="pill pill-off">🌙 Wachten op overschot</span>`;
   const pillWrap = document.getElementById('ov-pill-wrap');
@@ -656,43 +657,41 @@ async function renderOverview() {
 }
 
 // ─────────────────────────────────────────────
-// GRAFIEK 1 — P1 + zon + batterij laden
+// GRAFIEK 1 — P1 netbalans + batterij laden
 // ─────────────────────────────────────────────
 async function renderChart1() {
   const hours = chart1Range === '1h' ? 1 : chart1Range === 'today' ? 24 : 168;
   const entityIds = [cfg.p1_power_sensor];
   if (cfg.charger_power_sensor) entityIds.push(cfg.charger_power_sensor);
-  if (cfg.solar_power_sensor) entityIds.push(cfg.solar_power_sensor);
 
   const history = await ha.getHistory(entityIds, hours);
 
-  const p1History    = history[cfg.p1_power_sensor] || [];
-  const carHistory   = cfg.charger_power_sensor ? (history[cfg.charger_power_sensor] || []) : [];
-  const solarHistory = cfg.solar_power_sensor    ? (history[cfg.solar_power_sensor]    || []) : [];
+  const p1History  = history[cfg.p1_power_sensor] || [];
+  const carHistory = cfg.charger_power_sensor ? (history[cfg.charger_power_sensor] || []) : [];
 
-  const labels = [], p1D = [], carD = [], solarD = [];
+  const labels = [], p1D = [], afnameD = [], terugD = [], carD = [];
   p1History.forEach(point => {
     const v = parseFloat(point.s);
     if (isNaN(v)) return;
-    const t = new Date(point.lu * 1000);
-    labels.push(t.toLocaleTimeString('nl', { hour: '2-digit', minute: '2-digit' }));
+    labels.push(new Date(point.lu * 1000).toLocaleTimeString('nl', { hour: '2-digit', minute: '2-digit' }));
     p1D.push(v);
+    afnameD.push(v >= 0 ? v : null);
+    terugD.push(v < 0 ? v : null);
   });
 
-  // Interpoleer sensor data naar P1-tijdstempels
-  function interpolate(srcHistory) {
-    return p1History.map(p1pt => {
-      let closest = srcHistory[0];
-      for (const cp of srcHistory) {
+  // Interpoleer laderdata naar P1-tijdstempels
+  if (carHistory.length > 0) {
+    p1History.forEach(p1pt => {
+      let closest = carHistory[0];
+      for (const cp of carHistory) {
         if (Math.abs(cp.lu - p1pt.lu) < Math.abs(closest.lu - p1pt.lu)) closest = cp;
       }
       const v = parseFloat(closest.s);
-      return isNaN(v) ? null : v;
+      carD.push(isNaN(v) ? null : v);
     });
+  } else {
+    p1D.forEach(() => carD.push(null));
   }
-
-  (carHistory.length   > 0 ? interpolate(carHistory)   : p1D.map(() => null)).forEach(v => carD.push(v));
-  (solarHistory.length > 0 ? interpolate(solarHistory) : p1D.map(() => null)).forEach(v => solarD.push(v));
 
   const canvas = document.getElementById('chart1');
   if (!canvas) return;
@@ -707,57 +706,45 @@ async function renderChart1() {
       labels,
       datasets: [
         {
-          label: 'Net (excl. lading)',
-          data: p1D,
+          label: 'Afname net',
+          data: afnameD,
           borderColor: '#3b82f6',
-          backgroundColor: ctx => {
-            const chart = ctx.chart;
-            const { ctx: c, chartArea } = chart;
-            if (!chartArea) return 'transparent';
-            const yZero = chart.scales.y.getPixelForValue(0);
-            const ratio = Math.max(0, Math.min(1, (yZero - chartArea.top) / (chartArea.bottom - chartArea.top)));
-            const grad = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            grad.addColorStop(0, 'rgba(239,68,68,0.18)');
-            grad.addColorStop(Math.max(0, ratio - 0.01), 'rgba(239,68,68,0.03)');
-            grad.addColorStop(Math.min(1, ratio + 0.01), 'rgba(22,163,74,0.03)');
-            grad.addColorStop(1, 'rgba(22,163,74,0.20)');
-            return grad;
-          },
+          backgroundColor: 'rgba(59,130,246,0.15)',
           fill: 'origin',
           tension: 0.3,
           pointRadius: 0,
           borderWidth: 2,
+          spanGaps: false,
           yAxisID: 'y',
         },
         {
-          label: 'Zonnepanelen',
-          data: solarD,
-          borderColor: '#f59e0b',
-          backgroundColor: 'rgba(245,158,11,0.12)',
+          label: 'Teruglevering',
+          data: terugD,
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139,92,246,0.15)',
           fill: 'origin',
           tension: 0.3,
           pointRadius: 0,
           borderWidth: 2,
-          spanGaps: true,
-          yAxisID: 'yright',
+          spanGaps: false,
+          yAxisID: 'y',
         },
         {
           label: 'Batterij laden',
           data: carD,
           borderColor: '#16a34a',
-          backgroundColor: 'rgba(22,163,74,0.06)',
+          backgroundColor: 'rgba(22,163,74,0.15)',
           fill: 'origin',
           tension: 0.3,
           pointRadius: 0,
           borderWidth: 2,
-          borderDash: [6, 3],
           spanGaps: true,
           yAxisID: 'yright',
         },
         {
           label: 'Drempel',
           data: Array(labels.length).fill(threshold),
-          borderColor: '#8b5cf6',
+          borderColor: '#f59e0b',
           borderDash: [5, 4],
           borderWidth: 1.5,
           pointRadius: 0,
@@ -781,14 +768,10 @@ async function renderChart1() {
           intersect: false,
           callbacks: {
             label: ctx => {
-              if (ctx.datasetIndex === 0) {
-                const v = ctx.parsed.y;
-                return v <= 0
-                  ? ` Teruglevering: ${Math.abs(Math.round(v))} W`
-                  : ` Afname net: ${Math.round(v)} W`;
-              }
-              if (ctx.datasetIndex === 1 && ctx.parsed.y > 0)
-                return ` Zonnepanelen: ${Math.round(ctx.parsed.y)} W`;
+              if (ctx.datasetIndex === 0 && ctx.parsed.y != null)
+                return ` Afname net: ${Math.round(ctx.parsed.y)} W`;
+              if (ctx.datasetIndex === 1 && ctx.parsed.y != null)
+                return ` Teruglevering: ${Math.abs(Math.round(ctx.parsed.y))} W`;
               if (ctx.datasetIndex === 2 && ctx.parsed.y > 0)
                 return ` Batterij laden: ${Math.round(ctx.parsed.y)} W`;
               if (ctx.datasetIndex === 3)
@@ -809,18 +792,22 @@ async function renderChart1() {
             lineWidth: ctx => ctx.tick.value === 0 ? 2 : 1,
           },
           ticks: {
-            color: '#9ca3af',
+            color: ctx => ctx.tick.value >= 0 ? '#3b82f6' : '#8b5cf6',
             font: { size: 10 },
             callback: v => v > 0 ? `+${Math.round(v)}W` : `${Math.round(v)}W`,
           },
-          title: { display: true, text: '← teruglevering  |  afname →', color: '#9ca3af', font: { size: 10 } },
+          title: { display: true, text: '↑ afname  |  teruglevering ↓', color: '#9ca3af', font: { size: 10 } },
         },
         yright: {
           position: 'right',
           min: 0,
           grid: { display: false },
-          ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => v > 0 ? `${Math.round(v)}W` : '' },
-          title: { display: true, text: 'Zon / Lading (W)', color: '#9ca3af', font: { size: 10 } },
+          ticks: {
+            color: '#16a34a',
+            font: { size: 10 },
+            callback: v => v > 0 ? `${Math.round(v)}W` : '',
+          },
+          title: { display: true, text: 'Lading (W)', color: '#16a34a', font: { size: 10 } },
         },
       },
     },
