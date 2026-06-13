@@ -1,7 +1,7 @@
 {
   "domain": "solar_charger",
   "name": "SolarCharge",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "documentation": "https://github.com/kgooris/solar_charger",
   "issue_tracker": "https://github.com/kgooris/solar_charger/issues",
   "dependencies": [],
