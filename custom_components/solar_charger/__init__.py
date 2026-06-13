@@ -163,7 +163,10 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
 
 async def _register_panel(hass: HomeAssistant) -> None:
     from homeassistant.components.frontend import async_remove_panel
-    _LOGGER.debug("Panel registratie gestart — url=/local/solar_charger/panel.html")
+    manifest = json.loads((Path(__file__).parent / "manifest.json").read_text())
+    version = manifest.get("version", "0")
+    panel_url = f"/local/solar_charger/panel.html?v={version}"
+    _LOGGER.debug("Panel registratie gestart — url=%s", panel_url)
     try:
         async_remove_panel(hass, PANEL_URL)
     except Exception:
@@ -175,10 +178,10 @@ async def _register_panel(hass: HomeAssistant) -> None:
             sidebar_title=PANEL_TITLE,
             sidebar_icon=PANEL_ICON,
             frontend_url_path=PANEL_URL,
-            config={"url": "/local/solar_charger/panel.html"},
+            config={"url": panel_url},
             require_admin=False,
         )
-        _LOGGER.info("SolarCharge panel geregistreerd")
+        _LOGGER.info("SolarCharge panel geregistreerd (%s)", panel_url)
     except Exception as err:
         _LOGGER.error("Panel registratie mislukt: %s", err, exc_info=True)
 
