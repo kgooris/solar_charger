@@ -675,8 +675,8 @@ async function renderChart1() {
     if (isNaN(v)) return;
     labels.push(new Date(point.lu * 1000).toLocaleTimeString('nl', { hour: '2-digit', minute: '2-digit' }));
     p1D.push(v);
-    afnameD.push(v >= 0 ? v : null);
-    terugD.push(v < 0 ? v : null);
+    afnameD.push(Math.max(0, v));
+    terugD.push(Math.min(0, v));
   });
 
   // Interpoleer laderdata naar P1-tijdstempels
@@ -714,7 +714,6 @@ async function renderChart1() {
           tension: 0.3,
           pointRadius: 0,
           borderWidth: 2,
-          spanGaps: false,
           yAxisID: 'y',
         },
         {
@@ -726,7 +725,6 @@ async function renderChart1() {
           tension: 0.3,
           pointRadius: 0,
           borderWidth: 2,
-          spanGaps: false,
           yAxisID: 'y',
         },
         {
@@ -768,9 +766,9 @@ async function renderChart1() {
           intersect: false,
           callbacks: {
             label: ctx => {
-              if (ctx.datasetIndex === 0 && ctx.parsed.y != null)
+              if (ctx.datasetIndex === 0 && ctx.parsed.y > 0)
                 return ` Afname net: ${Math.round(ctx.parsed.y)} W`;
-              if (ctx.datasetIndex === 1 && ctx.parsed.y != null)
+              if (ctx.datasetIndex === 1 && ctx.parsed.y < 0)
                 return ` Teruglevering: ${Math.abs(Math.round(ctx.parsed.y))} W`;
               if (ctx.datasetIndex === 2 && ctx.parsed.y > 0)
                 return ` Batterij laden: ${Math.round(ctx.parsed.y)} W`;
