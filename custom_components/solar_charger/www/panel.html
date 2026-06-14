@@ -1253,6 +1253,13 @@ async function setChart2Range(days, btn) {
 function renderSettings() {
   const autoEnabled = getState('switch.solar_charger_automation_enabled').state === 'on';
 
+  // Read live values from HA number entities; fall back to cfg defaults
+  const minSurplus   = getFloat('number.solar_charger_min_surplus',      cfg.min_surplus_w     || 500);
+  const delayOn      = getFloat('number.solar_charger_delay_on',          cfg.delay_on_seconds  || 120);
+  const delayOff     = getFloat('number.solar_charger_delay_off',         cfg.delay_off_seconds || 180);
+  const efficiencyV  = getFloat('number.solar_charger_efficiency',        cfg.efficiency_percent || 90);
+  const noplugThresh = getFloat('number.solar_charger_noplug_threshold',  cfg.noplug_threshold_w || 50);
+
   const sensors = [
     [t('sens_p1'),     cfg.p1_power_sensor],
     [t('sens_solar'),  cfg.solar_power_sensor],
@@ -1264,15 +1271,15 @@ function renderSettings() {
     <div class="settings-card">
       <div class="settings-title">${t('set_automation')}</div>
       ${settingToggle(t('set_auto_toggle'), 'switch.solar_charger_automation_enabled', autoEnabled)}
-      ${settingNumber(t('set_min_surplus'), 'min_surplus_w', cfg.min_surplus_w || 500, 'W', 0, 5000, 50)}
-      ${settingNumber(t('set_delay_on'), 'delay_on_seconds', cfg.delay_on_seconds || 120, 's', 30, 600, 30)}
-      ${settingNumber(t('set_delay_off'), 'delay_off_seconds', cfg.delay_off_seconds || 180, 's', 30, 600, 30)}
+      ${settingNumber(t('set_min_surplus'), 'min_surplus_w', minSurplus, 'W', 0, 5000, 50)}
+      ${settingNumber(t('set_delay_on'), 'delay_on_seconds', delayOn, 's', 30, 600, 30)}
+      ${settingNumber(t('set_delay_off'), 'delay_off_seconds', delayOff, 's', 30, 600, 30)}
     </div>
 
     <div class="settings-card">
       <div class="settings-title">${t('set_energy')}</div>
-      ${settingNumberInfo(t('set_efficiency'), 'efficiency_percent', cfg.efficiency_percent || 90, '%', 70, 100, 1, t('set_efficiency_tip'))}
-      ${settingNumberInfo(t('set_noplug'), 'noplug_threshold_w', cfg.noplug_threshold_w || 50, 'W', 0, 200, 10, t('set_noplug_tip'))}
+      ${settingNumberInfo(t('set_efficiency'), 'efficiency_percent', efficiencyV, '%', 70, 100, 1, t('set_efficiency_tip'))}
+      ${settingNumberInfo(t('set_noplug'), 'noplug_threshold_w', noplugThresh, 'W', 0, 200, 10, t('set_noplug_tip'))}
     </div>
 
     <div class="settings-card">

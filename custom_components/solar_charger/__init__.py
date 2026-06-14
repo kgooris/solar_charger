@@ -204,6 +204,15 @@ def _setup_automation_logic(
     delay_off   = int(cfg.get(CONF_DELAY_OFF, DEFAULT_DELAY_OFF))
     efficiency  = float(cfg.get(CONF_EFFICIENCY, DEFAULT_EFFICIENCY)) / 100
 
+    def _live_min_surplus() -> int:
+        return int(_float_state('number.solar_charger_min_surplus') or min_surplus)
+
+    def _live_delay_on() -> int:
+        return int(_float_state('number.solar_charger_delay_on') or delay_on)
+
+    def _live_delay_off() -> int:
+        return int(_float_state('number.solar_charger_delay_off') or delay_off)
+
     # Mutable containers voor pending timer-cancel callbacks
     _timers: dict[str, object] = {"on": None, "off": None}
 
@@ -248,7 +257,7 @@ def _setup_automation_logic(
         _timers["on"] = None
         if not _automation_active():
             return
-        if _p1_watts() > -min_surplus:
+        if _p1_watts() > -_live_min_surplus():
             _LOGGER.debug("SolarCharge: turn-on timer verlopen maar overschot verdwenen")
             return
         if _charger_state() == "on":
@@ -357,15 +366,17 @@ def _setup_automation_logic(
         p1 = _p1_watts()
         charger_on = _charger_state() == "on"
 
-        if p1 <= -min_surplus:
+        cur_min_surplus = _live_min_surplus()
+        if p1 <= -cur_min_surplus:
             # Voldoende overschot
             if _timers["off"]:
                 _timers["off"]()
                 _timers["off"] = None
                 _LOGGER.debug("SolarCharge: turn-off timer geannuleerd (overschot hersteld)")
             if not charger_on and _timers["on"] is None:
-                _timers["on"] = async_call_later(hass, delay_on, _do_turn_on)
-                _LOGGER.debug("SolarCharge: turn-on gepland over %s s (overschot %s W)", delay_on, round(-p1))
+                cur_delay_on = _live_delay_on()
+                _timers["on"] = async_call_later(hass, cur_delay_on, _do_turn_on)
+                _LOGGER.debug("SolarCharge: turn-on gepland over %s s (overschot %s W)", cur_delay_on, round(-p1))
         else:
             # Onvoldoende overschot
             if _timers["on"]:
@@ -373,8 +384,9 @@ def _setup_automation_logic(
                 _timers["on"] = None
                 _LOGGER.debug("SolarCharge: turn-on timer geannuleerd (overschot weg)")
             if charger_on and _timers["off"] is None:
-                _timers["off"] = async_call_later(hass, delay_off, _do_turn_off)
-                _LOGGER.debug("SolarCharge: turn-off gepland over %s s", delay_off)
+                cur_delay_off = _live_delay_off()
+                _timers["off"] = async_call_later(hass, cur_delay_off, _do_turn_off)
+                _LOGGER.debug("SolarCharge: turn-off gepland over %s s", cur_delay_off)
 
     async def _daily_reset(now: datetime) -> None:
         """Reset dagelijkse energie-tellers om middernacht."""
@@ -396,11 +408,20 @@ def _setup_automation_logic(
 
     # ── registreer bij HA ─────────────────────────────────────────────────────
 
-    unsub_p1 = async_track_state_change_event(hass, [p1_sensor], _on_p1_change)
+    @callback
+    def _on_automation_toggle(event) -> None:
+        """Annuleer pending timers onmiddellijk wanneer automatisering uitgeschakeld wordt."""
+        new_state = event.data.get("new_state")
+        if new_state and new_state.state == "off":
+            _cancel_timers()
+            _LOGGER.debug("SolarCharge: automatisering uitgeschakeld, timers geannuleerd")
+
+    unsub_p1   = async_track_state_change_event(hass, [p1_sensor], _on_p1_change)
+    unsub_auto = async_track_state_change_event(hass, [AUTOMATION_BOOL], _on_automation_toggle)
     unsub_midnight = async_track_time_change(hass, _daily_reset, hour=0, minute=0, second=0)
 
     _LOGGER.info(
         "SolarCharge automatisering actief — min_surplus=%sW delay_on=%ss delay_off=%ss",
         min_surplus, delay_on, delay_off,
     )
-    return [unsub_p1, unsub_midnight, _cancel_timers]
+    return [unsub_p1, unsub_auto, unsub_midnight, _cancel_timers]
