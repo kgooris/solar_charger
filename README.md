@@ -6,23 +6,23 @@
 
 <a name="english"></a>
 
-A Home Assistant custom integration that automatically charges your electric vehicle using excess solar energy — and gives you a live dashboard to monitor and track every charging session.
+A Home Assistant custom integration that automatically charges your battery using excess solar energy — and gives you a live dashboard to monitor and track every charging session.
 
 ---
 
 ## The Problem It Solves
 
-When you have solar panels, your inverter often produces more power than your home consumes. That surplus is normally sent back to the grid, often at a lower feed-in rate than what you pay for grid power. If you own an electric vehicle, this is wasted money.
+When you have solar panels, your inverter often produces more power than your home consumes. That surplus is normally sent back to the grid, often at a lower feed-in rate than what you pay for grid power. If you have a battery charger, this is wasted money.
 
-This integration bridges that gap: it watches your net power meter in real time and turns on your EV charger the moment a configurable surplus is available — and turns it off again the moment that surplus disappears. No manual intervention needed.
+This integration bridges that gap: it watches your net power meter in real time and turns on your battery charger the moment a configurable surplus is available — and turns it off again the moment that surplus disappears. No manual intervention needed.
 
 ```
 Solar panels → produces 3 500 W
 House consumption → uses 800 W
 Surplus → 2 700 W going back to grid
 
-Integration detects 2 700 W surplus → turns on EV charger
-EV charger → draws 2 300 W from the surplus
+Integration detects 2 700 W surplus → turns on battery charger
+battery charger → draws 2 300 W from the surplus
 Net to grid → only 400 W wasted
 ```
 
@@ -32,7 +32,7 @@ Net to grid → only 400 W wasted
 
 ### Automatic surplus charging
 - Monitors your P1 meter (net power import/export) in real time
-- Turns your EV charger on when surplus exceeds a configurable threshold (default 500 W)
+- Turns your battery charger on when surplus exceeds a configurable threshold (default 500 W)
 - Waits for a configurable delay (default 120 s) before switching on, to avoid reacting to brief clouds
 - Turns the charger off after a configurable delay (default 180 s) when the surplus drops away
 - Checks that the automation is enabled via a toggle in the dashboard before acting
@@ -41,14 +41,14 @@ Net to grid → only 400 W wasted
 A custom panel appears directly in the Home Assistant sidebar with three tabs:
 
 **Overview tab**
-- Four live power meters: solar panels, house consumption (excluding the car), car charging power, and grid return
+- Four live power meters: solar panels, house consumption (excluding the charger), battery charging power, and grid return
 - Active session banner with pulsing indicator, start time, elapsed duration, and live kWh counter
 - Last session summary when no session is active
-- Power graph (P1 net flow + car charging) — switchable between last 1 hour, today, and 7 days
+- Power graph (P1 net flow + battery charging) — switchable between last 1 hour, today, and 7 days
 - Daily and total energy statistics
 
 **History tab**
-- Bar chart of charged energy per session (green = normal, orange = car not plugged in)
+- Bar chart of charged energy per session (green = normal, orange = charger not connected)
 - Filterable and paginated table of all sessions with date, start/stop time, duration, kWh at the wall, kWh in the battery (after efficiency loss), surplus at start, and status badge
 
 **Settings tab**
@@ -132,7 +132,7 @@ Select the power sensor from your net meter. This sensor must report in watts, w
 **Step 2 — Solar inverter**
 Select the current output power sensor of your solar inverter (always positive during the day, 0 at night).
 
-**Step 3 — EV charger**
+**Step 3 — battery charger**
 - Select the switch that controls your charger (`switch.*`)
 - Optionally select the built-in power meter of your smart switch — used for accurate kWh tracking
 - Set the maximum charge power (kW) — used as fallback if no power meter is selected
@@ -143,7 +143,7 @@ Select the current output power sensor of your solar inverter (always positive d
 | Minimum surplus | 500 W | Surplus must exceed this before charging starts |
 | Switch-on delay | 120 s | Surplus must be stable for this long before turning on |
 | Switch-off delay | 180 s | Deficit must last this long before turning off |
-| Charge efficiency | 90 % | Energy loss between the wall socket and the car battery |
+| Charge efficiency | 90 % | Energy loss between the wall socket and the battery |
 
 All thresholds can be changed later without re-running the wizard: either via **Settings → Integrations → SolarCharge → Options**, or directly in the dashboard Settings tab.
 
@@ -213,10 +213,10 @@ The integration copies `panel.html` automatically on setup. If it is missing, ch
 **kWh tracking seems inaccurate**
 If your smart switch has a built-in power meter, make sure you configured it in step 3 of the wizard. Without it, the integration estimates kWh from `max_charge_kw × session_duration`, which does not account for partial charging speed.
 
-Fine-tune the **charge efficiency** setting. Compare the "kWh in battery" value from the dashboard with what your car's app reports after a session, and adjust accordingly (typically 88–93 %).
+Fine-tune the **charge efficiency** setting. Compare the "kWh in battery" value from the dashboard with what your battery app reports after a session, and adjust accordingly (typically 88–93 %).
 
 **Sessions show "not plugged in" (orange)**
-The charger switch was on but the measured power was below the "not plugged in" threshold (default 50 W). This can happen when the car is fully charged and stops drawing power, or when the switch is turned on before the car is connected. Adjust the threshold in the dashboard Settings tab.
+The charger switch was on but the measured power was below the "not plugged in" threshold (default 50 W). This can happen when the battery is fully charged and stops drawing power, or when the switch is turned on before the charger is connected. Adjust the threshold in the dashboard Settings tab.
 
 ---
 
@@ -230,23 +230,23 @@ MIT — see [LICENSE](LICENSE) for details.
 
 # SolarCharge — Nederlandstalige versie
 
-Een Home Assistant custom integratie die je elektrische wagen automatisch oplaadt met zonne-energie-overschot — met een live dashboard om elke laadsessie te monitoren en bij te houden.
+Een Home Assistant custom integratie die je batterij automatisch oplaadt met zonne-energie-overschot — met een live dashboard om elke laadsessie te monitoren en bij te houden.
 
 ---
 
 ## Het probleem dat het oplost
 
-Wanneer je zonnepanelen meer produceren dan je huis verbruikt, gaat het overschot terug naar het net — vaak aan een lagere vergoeding dan wat je betaalt voor stroom. Als je een elektrische wagen hebt, is dat weggegooid geld.
+Wanneer je zonnepanelen meer produceren dan je huis verbruikt, gaat het overschot terug naar het net — vaak aan een lagere vergoeding dan wat je betaalt voor stroom. Als je een batterijlader hebt, is dat weggegooid geld.
 
-Deze integratie overbrugt die kloof: ze bewaakt je netteller in real time en schakelt je laadpaal in zodra er voldoende overschot beschikbaar is — en schakelt ze weer uit wanneer dat overschot wegvalt. Geen manuele tussenkomst nodig.
+Deze integratie overbrugt die kloof: ze bewaakt je netteller in real time en schakelt je batterijlader in zodra er voldoende overschot beschikbaar is — en schakelt ze weer uit wanneer dat overschot wegvalt. Geen manuele tussenkomst nodig.
 
 ```
 Zonnepanelen → produceren 3 500 W
 Huisverbruik → verbruikt 800 W
 Overschot → 2 700 W terug naar het net
 
-Integratie detecteert 2 700 W overschot → schakelt laadpaal in
-Laadpaal → neemt 2 300 W van het overschot
+Integratie detecteert 2 700 W overschot → schakelt batterijlader in
+Batterijlader → neemt 2 300 W van het overschot
 Netto naar net → slechts 400 W verspild
 ```
 
@@ -256,7 +256,7 @@ Netto naar net → slechts 400 W verspild
 
 ### Automatisch laden op overschot
 - Bewaakt je P1-meter (netto import/export) in real time
-- Schakelt de laadpaal in wanneer het overschot een instelbare drempel overschrijdt (standaard 500 W)
+- Schakelt de batterijlader in wanneer het overschot een instelbare drempel overschrijdt (standaard 500 W)
 - Wacht een instelbare vertraging (standaard 120 s) voor het inschakelkommando, om niet te reageren op korte bewolking
 - Schakelt de lader uit na een instelbare vertraging (standaard 180 s) wanneer het overschot wegvalt
 - Controleert of de automatisering ingeschakeld is via een schakelaar in het dashboard
@@ -265,14 +265,14 @@ Netto naar net → slechts 400 W verspild
 Een custom panel verschijnt direct in de Home Assistant zijbalk met drie tabbladen:
 
 **Overzicht**
-- Vier live vermogenmeters: zonnepanelen, huisverbruik (excl. auto), laadvermogen auto, teruglevering
+- Vier live vermogenmeters: zonnepanelen, huisverbruik (excl. lader), laadvermogen batterij, teruglevering
 - Actieve sessiebanner met pulserend lampje, starttijd, verstreken duur en live kWh-teller
 - Samenvatting laatste sessie als er geen sessie actief is
 - Vermogensgrafiek (P1 netstroom + autoladen) — schakelbaar tussen laatste 1 uur, vandaag en 7 dagen
 - Dagelijkse en totale energiestatistieken
 
 **Historiek**
-- Staafgrafiek van geladen energie per sessie (groen = normaal, oranje = auto niet ingeplugd)
+- Staafgrafiek van geladen energie per sessie (groen = normaal, oranje = lader niet ingesloten)
 - Filterbare en gepagineerde tabel van alle sessies met datum, start-/stoptijd, duur, kWh aan de muur, kWh in de accu (na efficiëntieverlies), overschot bij start en statusbadge
 
 **Instellingen**
@@ -287,8 +287,8 @@ Een custom panel verschijnt direct in de Home Assistant zijbalk met drie tabblad
 - Sessies worden geclassificeerd als: voltooid (automatisch), handmatig (automatisering stond uit) of niet ingeplugd (schakelaar aan maar weinig vermogen)
 
 ### Meldingen
-- "Auto laden gestart" melding met huidig overschot in watt
-- "Auto laden gestopt" melding met duur en geladen kWh
+- "Batterij laden gestart" melding met huidig overschot in watt
+- "Batterij laden gestopt" melding met duur en geladen kWh
 
 ### Dagelijkse reset om middernacht
 - `solar_charger_energy_today` en `solar_charger_energy_in_battery_today` worden automatisch om middernacht op 0 gezet
@@ -356,8 +356,8 @@ Selecteer de vermogensensor van je netteller. Deze sensor moet rapporteren in wa
 **Stap 2 — Zonne-omvormer**
 Selecteer de actuele vermogensensor van je omvormer (altijd positief overdag, 0 's nachts).
 
-**Stap 3 — Laadpaal**
-- Selecteer de schakelaar die je laadpaal aanstuurt (`switch.*`)
+**Stap 3 — Batterijlader**
+- Selecteer de schakelaar die je batterijlader aanstuurt (`switch.*`)
 - Optioneel: selecteer de ingebouwde energiemeter van je slimme schakelaar — voor nauwkeurige kWh-registratie
 - Stel het maximale laadvermogen in (kW) — gebruikt als fallback zonder energiemeter
 
@@ -367,7 +367,7 @@ Selecteer de actuele vermogensensor van je omvormer (altijd positief overdag, 0 
 | Minimaal overschot | 500 W | Overschot moet deze drempel overschrijden voor laden start |
 | Inschakelvertraging | 120 s | Overschot moet zo lang stabiel zijn voor inschakelen |
 | Uitschakelvertraging | 180 s | Tekort moet zo lang aanhouden voor uitschakelen |
-| Laadefficiëntie | 90 % | Energieverlies tussen stopcontact en accu van de auto |
+| Laadefficiëntie | 90 % | Energieverlies tussen stopcontact en de accu |
 
 Alle drempelwaarden zijn later aanpasbaar zonder de wizard opnieuw te doorlopen: via **Instellingen → Integraties → SolarCharge → Opties**, of rechtstreeks in het tabblad Instellingen van het dashboard.
 
@@ -435,10 +435,10 @@ De integratie kopieert `panel.html` automatisch bij setup. Als het ontbreekt, co
 **kWh-registratie lijkt onnauwkeurig**
 Als je slimme schakelaar een ingebouwde energiemeter heeft, controleer dan of je die in stap 3 van de wizard hebt geconfigureerd. Zonder energiemeter schat de integratie kWh op basis van `max_laadvermogen × sessieduur`, wat geen rekening houdt met variabel laadvermogen.
 
-Stel de **laadefficiëntie** nauwkeuriger in. Vergelijk de "kWh in accu"-waarde uit het dashboard met wat je auto-app rapporteert na een sessie, en pas de instelling aan (typisch 88–93 %).
+Stel de **laadefficiëntie** nauwkeuriger in. Vergelijk de "kWh in accu"-waarde uit het dashboard met wat je batterij-app rapporteert na een sessie, en pas de instelling aan (typisch 88–93 %).
 
 **Sessies tonen "niet ingeplugd" (oranje)**
-De laadschakelaar stond aan maar het gemeten vermogen lag onder de drempel voor "niet ingeplugd" (standaard 50 W). Dit kan gebeuren wanneer de auto volledig opgeladen is en stopt met afnemen, of wanneer de schakelaar wordt ingeschakeld voor de auto is aangesloten. Pas de drempel aan in het tabblad Instellingen van het dashboard.
+De laadschakelaar stond aan maar het gemeten vermogen lag onder de drempel voor "niet ingeplugd" (standaard 50 W). Dit kan gebeuren wanneer de batterij volledig opgeladen is en stopt met afnemen, of wanneer de schakelaar wordt ingeschakeld voor de lader is aangesloten. Pas de drempel aan in het tabblad Instellingen van het dashboard.
 
 ---
 

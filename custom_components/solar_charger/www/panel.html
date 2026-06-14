@@ -8,146 +8,208 @@
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 <style>
+:root{
+  --bg:#f9fafb;--card:#fff;--card2:#f3f4f6;
+  --border:#e5e7eb;--border2:#d1d5db;
+  --text:#111827;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;
+  --tooltip-bg:#1f2937;--tooltip-text:#f9fafb;
+  --green-bg:#f0fdf4;--green-border:#bbf7d0;--green-pulse:#dcfce7;--green-text:#166534;--green-val:#15803d;
+  --blue-bg:#eff6ff;--blue-border:#bfdbfe;--blue-hover:#dbeafe;--blue-val:#1d4ed8;
+  --orange-bg:#fff7ed;--orange-border:#fed7aa;--orange-text:#9a3412;
+  --amber-bg:#fefce8;--amber-border:#fde68a;--amber-text:#854d0e;
+  --red-bg:#fef2f2;--red-border:#fecaca;
+  --cyan-bg:#e0f2fe;--cyan-val:#0369a1;
+  --noplug-bg:#fffbf5;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#111827;--card:#1f2937;--card2:#374151;
+  --border:#374151;--border2:#4b5563;
+  --text:#f9fafb;--text2:#e5e7eb;--text3:#9ca3af;--text4:#6b7280;
+  --tooltip-bg:#374151;--tooltip-text:#f3f4f6;
+  --green-bg:rgba(22,163,74,.12);--green-border:rgba(22,163,74,.35);--green-pulse:rgba(22,163,74,.2);--green-text:#4ade80;--green-val:#4ade80;
+  --blue-bg:rgba(59,130,246,.12);--blue-border:rgba(59,130,246,.35);--blue-hover:rgba(59,130,246,.2);--blue-val:#60a5fa;
+  --orange-bg:rgba(249,115,22,.12);--orange-border:rgba(249,115,22,.35);--orange-text:#fb923c;
+  --amber-bg:rgba(234,179,8,.12);--amber-border:rgba(234,179,8,.35);--amber-text:#fbbf24;
+  --red-bg:rgba(220,38,38,.12);--red-border:rgba(220,38,38,.35);
+  --cyan-bg:rgba(14,165,233,.12);--cyan-val:#38bdf8;
+  --noplug-bg:rgba(249,115,22,.06);
+}}
+[data-theme=dark]{
+  --bg:#111827;--card:#1f2937;--card2:#374151;
+  --border:#374151;--border2:#4b5563;
+  --text:#f9fafb;--text2:#e5e7eb;--text3:#9ca3af;--text4:#6b7280;
+  --tooltip-bg:#374151;--tooltip-text:#f3f4f6;
+  --green-bg:rgba(22,163,74,.12);--green-border:rgba(22,163,74,.35);--green-pulse:rgba(22,163,74,.2);--green-text:#4ade80;--green-val:#4ade80;
+  --blue-bg:rgba(59,130,246,.12);--blue-border:rgba(59,130,246,.35);--blue-hover:rgba(59,130,246,.2);--blue-val:#60a5fa;
+  --orange-bg:rgba(249,115,22,.12);--orange-border:rgba(249,115,22,.35);--orange-text:#fb923c;
+  --amber-bg:rgba(234,179,8,.12);--amber-border:rgba(234,179,8,.35);--amber-text:#fbbf24;
+  --red-bg:rgba(220,38,38,.12);--red-border:rgba(220,38,38,.35);
+  --cyan-bg:rgba(14,165,233,.12);--cyan-val:#38bdf8;
+  --noplug-bg:rgba(249,115,22,.06);
+}
+[data-theme=light]{
+  --bg:#f9fafb;--card:#fff;--card2:#f3f4f6;
+  --border:#e5e7eb;--border2:#d1d5db;
+  --text:#111827;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;
+  --tooltip-bg:#1f2937;--tooltip-text:#f9fafb;
+  --green-bg:#f0fdf4;--green-border:#bbf7d0;--green-pulse:#dcfce7;--green-text:#166534;--green-val:#15803d;
+  --blue-bg:#eff6ff;--blue-border:#bfdbfe;--blue-hover:#dbeafe;--blue-val:#1d4ed8;
+  --orange-bg:#fff7ed;--orange-border:#fed7aa;--orange-text:#9a3412;
+  --amber-bg:#fefce8;--amber-border:#fde68a;--amber-text:#854d0e;
+  --red-bg:#fef2f2;--red-border:#fecaca;
+  --cyan-bg:#e0f2fe;--cyan-val:#0369a1;
+  --noplug-bg:#fffbf5;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;min-height:100vh;color:#111827}
-.tab-bar{display:flex;background:#fff;border-bottom:1px solid #e5e7eb;padding:0 1.25rem;position:sticky;top:0;z-index:10}
-.tab{padding:10px 16px;font-size:13px;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:5px}
-.tab.on{color:#166534;border-bottom-color:#16a34a;font-weight:500}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
+.tab-bar{display:flex;background:var(--card);border-bottom:1px solid var(--border);padding:0 1.25rem;position:sticky;top:0;z-index:10;align-items:stretch}
+.tab{padding:10px 16px;font-size:13px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:5px}
+.tab.on{color:var(--green-text);border-bottom-color:#16a34a;font-weight:500}
 .tab-content{display:none;padding:0.75rem}
 .tab-content.on{display:block}
+.panel-controls{display:flex;gap:4px;margin-left:auto;align-items:center;padding:0 4px}
+.panel-controls button{background:transparent;border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;color:var(--text3);font-weight:500;transition:background .15s}
+.panel-controls button:hover{background:var(--card2)}
 
 /* header */
 .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
 .panel-title{display:flex;align-items:center;gap:8px}
-.p-icon{width:32px;height:32px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.p-icon{width:32px;height:32px;background:var(--green-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
 .p-title{font-size:16px;font-weight:600}
 .pill{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500;border:1px solid transparent;display:flex;align-items:center;gap:4px}
-.pill-on{background:#f0fdf4;color:#166534;border-color:#bbf7d0}
-.pill-wait{background:#fefce8;color:#854d0e;border-color:#fde68a}
-.pill-off{background:#f3f4f6;color:#6b7280;border-color:#e5e7eb}
-.pill-noplug{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
+.pill-on{background:var(--green-bg);color:var(--green-text);border-color:var(--green-border)}
+.pill-wait{background:var(--amber-bg);color:var(--amber-text);border-color:var(--amber-border)}
+.pill-off{background:var(--card2);color:var(--text3);border-color:var(--border)}
+.pill-noplug{background:var(--orange-bg);color:var(--orange-text);border-color:var(--orange-border)}
 
 /* meters */
 .meters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
 @media(max-width:640px){.meters{grid-template-columns:repeat(2,1fr)}}
-.meter{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;border-top:3px solid transparent}
+.meter{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;border-top:3px solid transparent}
 .m-solar{border-top-color:#f59e0b}.m-house{border-top-color:#3b82f6}
 .m-car{border-top-color:#16a34a}.m-grid{border-top-color:#7c3aed}
-.m-lbl{font-size:10px;color:#6b7280;margin-bottom:5px}
+.m-lbl{font-size:10px;color:var(--text3);margin-bottom:5px}
 .m-val{font-size:17px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
-.m-unit{font-size:11px;font-weight:400;color:#9ca3af}
-.m-sub{font-size:10px;color:#9ca3af;margin-top:3px}
-.m-solar .m-val{color:#b45309}.m-house .m-val{color:#1d4ed8}
-.m-car .m-val{color:#15803d}.m-grid .m-val{color:#6d28d9}
+.m-unit{font-size:11px;font-weight:400;color:var(--text4)}
+.m-sub{font-size:10px;color:var(--text4);margin-top:3px}
+.m-solar .m-val{color:#b45309}.m-house .m-val{color:var(--blue-val)}
+.m-car .m-val{color:var(--green-val)}.m-grid .m-val{color:#6d28d9}
 
 /* sessie banner */
-.session-card{background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid #e5e7eb}
-.session-card.active{border-color:#bbf7d0}
-.session-card.noplug{border-color:#fed7aa;background:#fffbf5}
+.session-card{background:var(--card);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--border)}
+.session-card.active{border-color:var(--green-border)}
+.session-card.active .session-title{color:var(--green-text)}
+.session-card.noplug{border-color:var(--orange-border);background:var(--noplug-bg)}
+.session-card.noplug .session-title{color:var(--orange-text)}
 .session-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.dot-green{background:#16a34a;box-shadow:0 0 0 3px #bbf7d0;animation:pulse 2s infinite}
-.dot-orange{background:#f97316;box-shadow:0 0 0 3px #fed7aa}
-.dot-grey{background:#9ca3af}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 3px #bbf7d0}50%{box-shadow:0 0 0 6px #dcfce7}}
+.dot-green{background:#16a34a;box-shadow:0 0 0 3px var(--green-border);animation:pulse 2s infinite}
+.dot-orange{background:#f97316;box-shadow:0 0 0 3px var(--orange-border)}
+.dot-grey{background:var(--text4)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px var(--green-border)}50%{box-shadow:0 0 0 6px var(--green-pulse)}}
 .session-info{flex:1}
 .session-title{font-size:12px;font-weight:600;margin-bottom:2px}
-.session-meta{font-size:11px;color:#6b7280;display:flex;gap:10px;flex-wrap:wrap}
+.session-meta{font-size:11px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap}
 .session-kwh{text-align:right;flex-shrink:0}
-.session-kwh-val{font-size:16px;font-weight:700;color:#15803d;font-variant-numeric:tabular-nums}
-.session-kwh-lbl{font-size:10px;color:#9ca3af}
+.session-kwh-val{font-size:16px;font-weight:700;color:var(--green-val);font-variant-numeric:tabular-nums}
+.session-kwh-val.inactive{color:var(--text3)}
+.session-kwh-lbl{font-size:10px;color:var(--text4)}
 
 /* grafiek */
-.chart-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin-bottom:10px}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
 .chart-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;gap:8px;flex-wrap:wrap}
 .chart-title{font-size:12px;font-weight:500}
-.chart-sub{font-size:10px;color:#9ca3af;margin-top:1px}
-.chart-leg{display:flex;gap:10px;font-size:10px;color:#6b7280;flex-wrap:wrap;align-items:center}
+.chart-sub{font-size:10px;color:var(--text4);margin-top:1px}
+.chart-leg{display:flex;gap:10px;font-size:10px;color:var(--text3);flex-wrap:wrap;align-items:center}
 .ld{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
 .ld-dash{width:18px;height:0;display:inline-block;margin-right:3px;vertical-align:middle}
 .range-btns{display:flex;gap:4px;margin-bottom:8px;align-items:center;flex-wrap:wrap}
-.rbtn{padding:3px 9px;font-size:11px;border-radius:5px;border:1px solid #e5e7eb;background:#fff;color:#6b7280;cursor:pointer}
-.rbtn.on{background:#f0fdf4;color:#166534;border-color:#bbf7d0;font-weight:500}
-input[type=date]{padding:3px 7px;font-size:11px;border:1px solid #e5e7eb;border-radius:5px;color:#374151;background:#fff}
-.zoom-hint{font-size:10px;color:#9ca3af;margin-top:4px}
-.loading{text-align:center;padding:2rem;color:#9ca3af;font-size:13px}
+.rbtn{padding:3px 9px;font-size:11px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--text3);cursor:pointer}
+.rbtn.on{background:var(--green-bg);color:var(--green-text);border-color:var(--green-border);font-weight:500}
+input[type=date]{padding:3px 7px;font-size:11px;border:1px solid var(--border);border-radius:5px;color:var(--text2);background:var(--card)}
+.zoom-hint{font-size:10px;color:var(--text4);margin-top:4px}
+.loading{text-align:center;padding:2rem;color:var(--text4);font-size:13px}
 
 /* stats */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
 @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
-.stat{background:#f3f4f6;border-radius:8px;padding:9px 10px}
-.stat-lbl{font-size:10px;color:#6b7280;margin-bottom:3px}
+.stat{background:var(--card2);border-radius:8px;padding:9px 10px}
+.stat-lbl{font-size:10px;color:var(--text3);margin-bottom:3px}
 .stat-val{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
-.stat-unit{font-size:10px;font-weight:400;color:#9ca3af}
+.stat-unit{font-size:10px;font-weight:400;color:var(--text4)}
 
 /* logboek */
-.log-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin-bottom:10px}
-.log-title{font-size:12px;font-weight:500;margin-bottom:8px;color:#374151}
+.log-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
+.log-title{font-size:12px;font-weight:500;margin-bottom:8px;color:var(--text2)}
 .log-wrap{overflow-x:auto}
 .log-table{width:100%;border-collapse:collapse;font-size:11px;min-width:560px}
-.log-table th{text-align:left;padding:5px 8px;color:#9ca3af;font-weight:500;border-bottom:1px solid #f3f4f6;font-size:10px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
-.log-table td{padding:7px 8px;border-bottom:1px solid #f9fafb;color:#374151;white-space:nowrap}
+.log-table th{text-align:left;padding:5px 8px;color:var(--text4);font-weight:500;border-bottom:1px solid var(--card2);font-size:10px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.log-table td{padding:7px 8px;border-bottom:1px solid var(--bg);color:var(--text2);white-space:nowrap}
 .log-table tr:last-child td{border-bottom:none}
-.log-table tr:hover td{background:#f9fafb}
+.log-table tr:hover td{background:var(--bg)}
 .log-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:500}
-.badge-ok{background:#f0fdf4;color:#166534}
-.badge-noplug{background:#fff7ed;color:#9a3412}
-.badge-manual{background:#eff6ff;color:#1d4ed8}
-.empty-log{text-align:center;padding:1.5rem;color:#9ca3af;font-size:12px}
+.badge-ok{background:var(--green-bg);color:var(--green-text)}
+.badge-noplug{background:var(--orange-bg);color:var(--orange-text)}
+.badge-manual{background:var(--blue-bg);color:var(--blue-val)}
+.empty-log{text-align:center;padding:1.5rem;color:var(--text4);font-size:12px}
 
 /* paginering */
-.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:11px;color:#6b7280;flex-wrap:wrap;gap:6px}
+.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:11px;color:var(--text3);flex-wrap:wrap;gap:6px}
 .page-btns{display:flex;gap:4px;flex-wrap:wrap}
-.page-btn{padding:3px 9px;border:1px solid #e5e7eb;border-radius:5px;background:#fff;color:#6b7280;cursor:pointer;font-size:11px}
-.page-btn.on{background:#f0fdf4;color:#166534;border-color:#bbf7d0;font-weight:500}
+.page-btn{padding:3px 9px;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text3);cursor:pointer;font-size:11px}
+.page-btn.on{background:var(--green-bg);color:var(--green-text);border-color:var(--green-border);font-weight:500}
 .filter-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
-.filter-label{font-size:11px;color:#6b7280}
+.filter-label{font-size:11px;color:var(--text3)}
 
 /* instellingen */
-.settings-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin-bottom:10px}
-.settings-title{font-size:12px;font-weight:500;color:#374151;margin-bottom:8px}
-.srow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;gap:8px}
+.settings-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
+.settings-title{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--card2);gap:8px}
 .srow:last-child{border-bottom:none}
 .srow-left{flex:1}
-.srow-lbl{font-size:13px;color:#374151;display:flex;align-items:center;gap:5px}
-.srow-sub{font-size:11px;color:#9ca3af;margin-top:2px}
+.srow-lbl{font-size:13px;color:var(--text2);display:flex;align-items:center;gap:5px}
+.srow-sub{font-size:11px;color:var(--text4);margin-top:2px}
 .srow-ctrl{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.sinput{width:68px;background:#f9fafb;border:1px solid #d1d5db;border-radius:6px;color:#111827;font-size:13px;padding:5px 7px;text-align:right}
-.sunit{font-size:11px;color:#9ca3af;width:28px}
-.sbtn{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:500;transition:background .15s}
-.sbtn:hover{background:#dbeafe}
-.sbtn.saved{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.sinput{width:68px;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:13px;padding:5px 7px;text-align:right}
+.sunit{font-size:11px;color:var(--text4);width:28px}
+.sbtn{background:var(--blue-bg);border:1px solid var(--blue-border);color:var(--blue-val);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:500;transition:background .15s}
+.sbtn:hover{background:var(--blue-hover)}
+.sbtn.saved{background:var(--green-bg);border-color:var(--green-border);color:var(--green-text)}
 .tog{position:relative;width:36px;height:20px;flex-shrink:0}
 .tog input{opacity:0;width:0;height:0;position:absolute}
-.tog-sl{position:absolute;inset:0;background:#d1d5db;border-radius:20px;cursor:pointer;transition:background .2s}
+.tog-sl{position:absolute;inset:0;background:var(--border2);border-radius:20px;cursor:pointer;transition:background .2s}
 .tog-sl::before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s}
 .tog input:checked + .tog-sl{background:#16a34a}
 .tog input:checked + .tog-sl::before{transform:translateX(16px)}
 
 /* info tooltip */
-.info-btn{width:16px;height:16px;border-radius:50%;background:#e0f2fe;border:none;color:#0369a1;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+.info-btn{width:16px;height:16px;border-radius:50%;background:var(--cyan-bg);border:none;color:var(--cyan-val);font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
 .info-btn:hover .tooltip{display:block}
-.tooltip{display:none;position:absolute;bottom:calc(100% + 6px);right:0;width:240px;background:#1f2937;color:#f9fafb;font-size:11px;line-height:1.6;padding:9px 11px;border-radius:8px;z-index:20;pointer-events:none;text-align:left;font-weight:400}
-.tooltip::after{content:'';position:absolute;top:100%;right:6px;border:5px solid transparent;border-top-color:#1f2937}
+.tooltip{display:none;position:absolute;bottom:calc(100% + 6px);right:0;width:240px;background:var(--tooltip-bg);color:var(--tooltip-text);font-size:11px;line-height:1.6;padding:9px 11px;border-radius:8px;z-index:20;pointer-events:none;text-align:left;font-weight:400}
+.tooltip::after{content:'';position:absolute;top:100%;right:6px;border:5px solid transparent;border-top-color:var(--tooltip-bg)}
 
 /* sensoren */
-.sens-title{font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
-.sens-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f9fafb;font-size:11px}
+.sens-title{font-size:10px;font-weight:600;color:var(--text4);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.sens-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg);font-size:11px}
 .sens-row:last-child{border-bottom:none}
 .sens-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.sens-name{color:#6b7280;min-width:130px;flex-shrink:0}
-.sens-id{font-family:'SF Mono',Menlo,monospace;color:#374151;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sens-state{font-size:10px;color:#9ca3af;margin-left:auto;flex-shrink:0}
+.sens-name{color:var(--text3);min-width:130px;flex-shrink:0}
+.sens-id{font-family:'SF Mono',Menlo,monospace;color:var(--text2);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sens-state{font-size:10px;color:var(--text4);margin-left:auto;flex-shrink:0}
 
-.connecting{text-align:center;padding:4rem 2rem;color:#6b7280;font-size:14px}
-.error-msg{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:1rem;color:#dc2626;font-size:13px;margin:1rem}
+.connecting{text-align:center;padding:4rem 2rem;color:var(--text3);font-size:14px}
+.error-msg{background:var(--red-bg);border:1px solid var(--red-border);border-radius:10px;padding:1rem;color:#dc2626;font-size:13px;margin:1rem}
 </style>
 </head>
 <body>
 
 <div class="tab-bar">
-  <div class="tab on" onclick="switchTab('overview',this)">⚡ Overzicht</div>
-  <div class="tab" onclick="switchTab('history',this)">📊 Historiek</div>
-  <div class="tab" onclick="switchTab('settings',this)">⚙️ Instellingen</div>
+  <div class="tab on" data-tab="overview" onclick="switchTab('overview',this)">⚡ Overzicht</div>
+  <div class="tab" data-tab="history" onclick="switchTab('history',this)">📊 Historiek</div>
+  <div class="tab" data-tab="settings" onclick="switchTab('settings',this)">⚙️ Instellingen</div>
+  <div class="panel-controls">
+    <button id="btn-lang" onclick="toggleLang()" title="Switch language">EN</button>
+    <button id="btn-theme" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+  </div>
 </div>
 
 <div id="tab-overview" class="tab-content on">
@@ -158,7 +220,219 @@ input[type=date]{padding:3px 7px;font-size:11px;border:1px solid #e5e7eb;border-
 
 <script>
 // ─────────────────────────────────────────────
-// CONFIGURATIE — geladen vanuit config.json
+// VERTALINGEN / TRANSLATIONS
+// ─────────────────────────────────────────────
+const STRINGS = {
+  nl: {
+    tab_overview:'⚡ Overzicht', tab_history:'📊 Historiek', tab_settings:'⚙️ Instellingen',
+    connecting:'Verbinding maken met Home Assistant...',
+    meter_solar:'☀️ Zonnepanelen', meter_solar_sub:'huidig vermogen',
+    meter_house:'🏠 Huisverbruik', meter_house_sub:'excl. lading',
+    meter_battery:'🔋 Batterij laden', meter_battery_on:'actief', meter_battery_off:'niet actief',
+    meter_grid:'📡 Teruglevering', meter_grid_sub:'naar het net',
+    chart1_title:'Afname / teruglevering net',
+    chart1_sub:'Blauw = afname van net · Paars = teruglevering naar net · Groen = batterij laden (rechts)',
+    chart1_leg_p1:'Afname (blauw) / Teruglevering (paars)',
+    chart1_leg_bat:'Batterij laden', chart1_leg_thr:'Drempel',
+    chart1_1h:'1u', chart1_today:'Vandaag', chart1_7d:'7 dagen', chart1_or:'of:',
+    chart1_apply:'Pas toe',
+    chart1_hint:'💡 Scroll om in/uit te zoomen · sleep om te pannen · dubbelklik om te resetten',
+    chart1_yaxis:'↑ afname  |  teruglevering ↓', chart1_yright:'Lading (W)',
+    tip_take:'Afname net', tip_return:'Teruglevering', tip_battery:'Batterij laden', tip_threshold:'Drempel',
+    stat_today:'Vandaag geladen', stat_battery:'In accu (~{eff}%)', stat_sessions:'Sessies vandaag', stat_total:'Totaal ooit',
+    log_last10:'📋 Laatste 10 laadsessies',
+    pill_noplug:'⚠️ Schakelaar aan — batterij niet aangesloten',
+    pill_charging:'⚡ Laden actief',
+    pill_off:'⏸️ Automatisering niet actief — schakel in via Instellingen',
+    pill_surplus:'☀️ Overschot beschikbaar — wachten op vertraging',
+    pill_waiting:'🌙 Wachten op overschot',
+    sess_noplug:'Schakelaar aan — batterij niet aangesloten',
+    sess_active:'Laadsessie actief',
+    sess_started:'⏱ Gestart om', sess_ago_suffix:'geleden',
+    sess_surplus:'📡 Overschot bij start:',
+    sess_this:'deze sessie', sess_last:'Laatste sessie —', sess_last_lbl:'laatste sessie',
+    col_date:'Datum', col_start:'Start', col_stop:'Stop', col_dur:'Duur',
+    col_kwh_wall:'kWh (muur)', col_kwh_bat:'kWh (accu)', col_surplus:'Overschot bij start', col_status:'Status',
+    log_empty:'Nog geen laadsessies geregistreerd',
+    dur_min:'min', dur_h:'u',
+    chart2_title:'Geladen energie per sessie',
+    chart2_sub:'kWh gemeten aan de schakelaar · oranje = batterij niet aangesloten',
+    chart2_ok:'Geladen (kWh)', chart2_noplug:'Niet ingeplugd',
+    chart2_hint:'💡 Sleep om te pannen · scroll om in/uit te zoomen · dubbelklik om te resetten',
+    log_all:'📋 Alle laadsessies',
+    log_filter:'Filter:', log_search:'Zoeken', log_reset:'Reset',
+    log_apply:'Pas toe',
+    log_empty2:'Geen sessies gevonden',
+    log_page:'{total} sessies · pagina {page} van {pages}',
+    log_count:'{total} sessies',
+    set_automation:'Automatisering', set_auto_toggle:'Automatisering actief',
+    set_min_surplus:'Minimaal overschot om te laden',
+    set_delay_on:'Vertraging inschakelen', set_delay_off:'Vertraging uitschakelen',
+    set_energy:'Energie tracking',
+    set_efficiency:'Laadefficiëntie',
+    set_efficiency_tip:'Niet alle stroom die de schakelaar meet komt in de accu terecht — een deel gaat verloren als warmte in de lader en kabels.<br><br>Voorbeeld: schakelaar meet 2,3 kWh · efficiëntie 90% → 2,07 kWh in de accu.<br><br>Typische waarde: 88–93%. Vergelijk het dashboard met je batterij-app na een sessie om dit bij te stellen.',
+    set_noplug:'Drempel "niet ingeplugd"',
+    set_noplug_tip:'Als de schakelaar AAN staat maar de energiemeter minder dan dit aantal watt meet, wordt aangenomen dat de batterij niet aangesloten is. Die sessie wordt oranje gemarkeerd in het logboek.<br><br>Aanbevolen: 50 W.',
+    set_sensors:'Geconfigureerde sensoren',
+    set_sensors_note:'Sensoren wijzigen via <strong>Instellingen → Integraties → SolarCharge → Opties</strong>',
+    set_save:'Sla op', set_saved:'✓ Opgeslagen',
+    sens_p1:'P1 netstroom', sens_solar:'Zonnepanelen', sens_switch:'Lader schakelaar',
+    sens_power:'Lader vermogen', sens_not_cfg:'(niet geconfigureerd)',
+    badge_noplug:'⚠️ Niet ingeplugd', badge_manual:'✋ Handmatig', badge_ok:'✓ Voltooid',
+    err_no_cfg:'Integratie nog niet geconfigureerd. Ga naar Instellingen → Integraties → SolarCharge → Configureren.',
+    err_no_token:'Geen HA auth token gevonden. Open dit panel via de HA sidebar.',
+    err_expired:'Sessie verlopen — herlaad Home Assistant (F5).',
+    err_ws:'WebSocket fout — herlaad de pagina.',
+    err_connect:'Kan geen verbinding maken met Home Assistant na 3 pogingen. Herlaad de pagina (F5).',
+    err_closed:'Verbinding verbroken (code {code}). Herlaad Home Assistant (F5).',
+    err_auth:'Authenticatie mislukt — herlaad Home Assistant.',
+    range_1y:'1j',
+  },
+  en: {
+    tab_overview:'⚡ Overview', tab_history:'📊 History', tab_settings:'⚙️ Settings',
+    connecting:'Connecting to Home Assistant...',
+    meter_solar:'☀️ Solar panels', meter_solar_sub:'current power',
+    meter_house:'🏠 House consumption', meter_house_sub:'excl. charging',
+    meter_battery:'🔋 Battery charging', meter_battery_on:'active', meter_battery_off:'inactive',
+    meter_grid:'📡 Grid return', meter_grid_sub:'to the grid',
+    chart1_title:'Grid import / export',
+    chart1_sub:'Blue = grid import · Purple = grid export · Green = battery charging (right)',
+    chart1_leg_p1:'Import (blue) / Export (purple)',
+    chart1_leg_bat:'Battery charging', chart1_leg_thr:'Threshold',
+    chart1_1h:'1h', chart1_today:'Today', chart1_7d:'7 days', chart1_or:'or:',
+    chart1_apply:'Apply',
+    chart1_hint:'💡 Scroll to zoom · drag to pan · double-click to reset',
+    chart1_yaxis:'↑ import  |  export ↓', chart1_yright:'Charging (W)',
+    tip_take:'Grid import', tip_return:'Grid export', tip_battery:'Battery charging', tip_threshold:'Threshold',
+    stat_today:'Charged today', stat_battery:'In battery (~{eff}%)', stat_sessions:'Sessions today', stat_total:'Total all time',
+    log_last10:'📋 Last 10 charging sessions',
+    pill_noplug:'⚠️ Switch on — battery not connected',
+    pill_charging:'⚡ Charging active',
+    pill_off:'⏸️ Automation inactive — enable it in Settings',
+    pill_surplus:'☀️ Surplus available — waiting for delay',
+    pill_waiting:'🌙 Waiting for surplus',
+    sess_noplug:'Switch on — battery not connected',
+    sess_active:'Charging session active',
+    sess_started:'⏱ Started at', sess_ago_suffix:'ago',
+    sess_surplus:'📡 Surplus at start:',
+    sess_this:'this session', sess_last:'Last session —', sess_last_lbl:'last session',
+    col_date:'Date', col_start:'Start', col_stop:'Stop', col_dur:'Duration',
+    col_kwh_wall:'kWh (wall)', col_kwh_bat:'kWh (battery)', col_surplus:'Surplus at start', col_status:'Status',
+    log_empty:'No charging sessions recorded yet',
+    dur_min:'min', dur_h:'h',
+    chart2_title:'Charged energy per session',
+    chart2_sub:'kWh measured at the switch · orange = charger not connected',
+    chart2_ok:'Charged (kWh)', chart2_noplug:'Not connected',
+    chart2_hint:'💡 Drag to pan · scroll to zoom · double-click to reset',
+    log_all:'📋 All charging sessions',
+    log_filter:'Filter:', log_search:'Search', log_reset:'Reset',
+    log_apply:'Apply',
+    log_empty2:'No sessions found',
+    log_page:'{total} sessions · page {page} of {pages}',
+    log_count:'{total} sessions',
+    set_automation:'Automation', set_auto_toggle:'Automation active',
+    set_min_surplus:'Minimum surplus to start charging',
+    set_delay_on:'Switch-on delay', set_delay_off:'Switch-off delay',
+    set_energy:'Energy tracking',
+    set_efficiency:'Charge efficiency',
+    set_efficiency_tip:'Not all power measured by the switch reaches the battery — some is lost as heat in the charger and cables.<br><br>Example: switch measures 2.3 kWh · efficiency 90% → 2.07 kWh in battery.<br><br>Typical value: 88–93%. Compare the dashboard with your battery app after a session to calibrate.',
+    set_noplug:'Threshold "not connected"',
+    set_noplug_tip:'If the switch is ON but the power meter reads less than this wattage, the battery is assumed not connected. That session is marked orange in the log.<br><br>Recommended: 50 W.',
+    set_sensors:'Configured sensors',
+    set_sensors_note:'Change sensors via <strong>Settings → Integrations → SolarCharge → Options</strong>',
+    set_save:'Save', set_saved:'✓ Saved',
+    sens_p1:'P1 net meter', sens_solar:'Solar panels', sens_switch:'Charger switch',
+    sens_power:'Charger power', sens_not_cfg:'(not configured)',
+    badge_noplug:'⚠️ Not connected', badge_manual:'✋ Manual', badge_ok:'✓ Completed',
+    err_no_cfg:'Integration not yet configured. Go to Settings → Integrations → SolarCharge → Configure.',
+    err_no_token:'No HA auth token found. Open this panel via the HA sidebar.',
+    err_expired:'Session expired — reload Home Assistant (F5).',
+    err_ws:'WebSocket error — reload the page.',
+    err_connect:'Could not connect to Home Assistant after 3 attempts. Reload the page (F5).',
+    err_closed:'Connection lost (code {code}). Reload Home Assistant (F5).',
+    err_auth:'Authentication failed — reload Home Assistant.',
+    range_1y:'1y',
+  },
+};
+let lang = 'nl';
+const t = key => STRINGS[lang]?.[key] ?? STRINGS.en[key] ?? key;
+
+// ─────────────────────────────────────────────
+// THEMA & TAAL
+// ─────────────────────────────────────────────
+function detectLang() {
+  const stored = localStorage.getItem('solar_charger_lang');
+  if (stored) return stored;
+  try {
+    const haLang = window.parent.document.querySelector('home-assistant')?.__hass?.language || '';
+    if (haLang.startsWith('nl')) return 'nl';
+    if (haLang) return 'en';
+  } catch(e) {}
+  return navigator.language?.startsWith('nl') ? 'nl' : 'en';
+}
+
+function applyTheme() {
+  let dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  try {
+    const bg = getComputedStyle(window.parent.document.documentElement)
+      .getPropertyValue('--primary-background-color').trim();
+    if (bg) {
+      const m = bg.match(/\d+/g);
+      if (m && m.length >= 3) dark = (0.299*+m[0] + 0.587*+m[1] + 0.114*+m[2]) / 255 < 0.5;
+    }
+  } catch(e) {}
+  const stored = localStorage.getItem('solar_charger_theme');
+  if (stored) dark = stored === 'dark';
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const btn = document.getElementById('btn-theme');
+  if (btn) btn.textContent = dark ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+  localStorage.setItem('solar_charger_theme', dark ? 'dark' : 'light');
+  applyTheme();
+  if (chart1) renderChart1();
+  if (chart2) renderChart2(_lastChart2Sessions || []);
+}
+
+function toggleLang() {
+  lang = lang === 'nl' ? 'en' : 'nl';
+  localStorage.setItem('solar_charger_lang', lang);
+  document.documentElement.setAttribute('lang', lang);
+  updateTabLabels();
+  overviewBuilt = false;
+  renderOverview();
+  if (document.getElementById('tab-history')?.classList.contains('on')) renderHistory();
+  if (document.getElementById('tab-settings')?.classList.contains('on')) renderSettings();
+}
+
+function updateTabLabels() {
+  document.querySelectorAll('.tab[data-tab]').forEach(tab => {
+    const name = tab.getAttribute('data-tab');
+    if (name === 'overview') tab.innerHTML = t('tab_overview');
+    else if (name === 'history')  tab.innerHTML = t('tab_history');
+    else if (name === 'settings') tab.innerHTML = t('tab_settings');
+  });
+  const btnLang = document.getElementById('btn-lang');
+  if (btnLang) btnLang.textContent = lang === 'nl' ? 'EN' : 'NL';
+}
+
+// Chart colour helpers (theme-aware)
+const isDark    = () => document.documentElement.getAttribute('data-theme') === 'dark';
+const gridColor = () => isDark() ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+const gridZero  = () => isDark() ? 'rgba(255,255,255,0.25)' : '#9ca3af';
+const tickColor = () => isDark() ? '#9ca3af' : '#6b7280';
+const axisColor = () => isDark() ? '#6b7280' : '#9ca3af';
+const tooltipBg = () => isDark() ? '#374151' : '#1f2937';
+
+// Apply immediately so there is no flash
+lang = detectLang();
+applyTheme();
+document.documentElement.setAttribute('lang', lang);
+
+// ─────────────────────────────────────────────
+// CONFIGURATIE
 // ─────────────────────────────────────────────
 let cfg = {};
 
@@ -166,9 +440,7 @@ async function loadConfig() {
   try {
     const r = await fetch('/local/solar_charger/config.json');
     if (r.ok) cfg = await r.json();
-  } catch(e) {
-    console.warn('config.json niet gevonden, gebruik defaults');
-  }
+  } catch(e) {}
 }
 
 // ─────────────────────────────────────────────
@@ -176,49 +448,35 @@ async function loadConfig() {
 // ─────────────────────────────────────────────
 class HAConnection {
   constructor() {
-    this.ws = null;
-    this.msgId = 1;
-    this.pending = new Map();
-    this.subs = new Map();
-    this.token = null;
-    this.ready = false;
-    this.onReady = null;
+    this.ws = null; this.msgId = 1; this.pending = new Map();
+    this.subs = new Map(); this.token = null; this.ready = false; this.onReady = null;
   }
 
   getToken() {
     try {
       const raw = localStorage.getItem('hassTokens');
-      if (!raw) { console.error('[SCC] hassTokens missing from localStorage'); return null; }
-      const t = JSON.parse(raw);
-      if (!t.access_token) { console.error('[SCC] hassTokens has no access_token'); return null; }
-      if (t.expires && Date.now() > t.expires) {
-        console.error('[SCC] access_token expired at', new Date(t.expires));
-        return '__expired__';
-      }
-      return t.access_token;
-    } catch (e) { console.error('[SCC] getToken error:', e); return null; }
+      if (!raw) { console.error('[SCC] hassTokens missing'); return null; }
+      const tk = JSON.parse(raw);
+      if (!tk.access_token) { console.error('[SCC] no access_token'); return null; }
+      if (tk.expires && Date.now() > tk.expires) return '__expired__';
+      return tk.access_token;
+    } catch(e) { return null; }
   }
 
   connect() {
-    if ((this._retries || 0) >= 3) {
-      showError('Kan geen verbinding maken met Home Assistant na 3 pogingen. Herlaad de pagina (F5).');
-      return;
-    }
+    if ((this._retries || 0) >= 3) { showError(t('err_connect')); return; }
     this.token = this.getToken();
-    if (!this.token) { showError('Geen HA auth token gevonden. Open dit panel via de HA sidebar.'); return; }
-    if (this.token === '__expired__') { showError('Sessie verlopen — herlaad Home Assistant (F5).'); return; }
+    if (!this.token) { showError(t('err_no_token')); return; }
+    if (this.token === '__expired__') { showError(t('err_expired')); return; }
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const url = `${proto}://${location.host}/api/websocket`;
-    console.log('[SCC] Connecting to', url);
-    this.ws = new WebSocket(url);
-    this.ws.onmessage = e => { try { this._onMsg(JSON.parse(e.data)); } catch(err) { console.error('[SCC] onmessage error:', err); } };
-    this.ws.onerror = () => { console.error('[SCC] WebSocket error'); showError('WebSocket fout — herlaad de pagina.'); };
+    this.ws = new WebSocket(`${proto}://${location.host}/api/websocket`);
+    this.ws.onmessage = e => { try { this._onMsg(JSON.parse(e.data)); } catch(err) {} };
+    this.ws.onerror = () => showError(t('err_ws'));
     this.ws.onclose = e => {
-      console.warn('[SCC] WebSocket closed:', e.code, e.reason);
       this.ready = false;
       this._retries = (this._retries || 0) + 1;
       if (this._retries < 3) setTimeout(() => this.connect(), 5000);
-      else showError('Verbinding verbroken (code ' + e.code + '). Herlaad Home Assistant (F5).');
+      else showError(t('err_closed').replace('{code}', e.code));
     };
   }
 
@@ -226,12 +484,10 @@ class HAConnection {
     if (msg.type === 'auth_required') {
       this.ws.send(JSON.stringify({ type: 'auth', access_token: this.token }));
     } else if (msg.type === 'auth_ok') {
-      console.log('[SCC] auth_ok');
-      this._retries = 0;
-      this.ready = true;
+      this._retries = 0; this.ready = true;
       if (this.onReady) this.onReady();
     } else if (msg.type === 'auth_invalid') {
-      showError('Authenticatie mislukt — herlaad Home Assistant.');
+      showError(t('err_auth'));
     } else if (msg.type === 'result') {
       const cb = this.pending.get(msg.id);
       if (cb) { cb(msg); this.pending.delete(msg.id); }
@@ -243,17 +499,13 @@ class HAConnection {
 
   send(msg) {
     return new Promise(resolve => {
-      const id = this.msgId++;
-      msg.id = id;
+      const id = this.msgId++; msg.id = id;
       this.pending.set(id, resolve);
       this.ws.send(JSON.stringify(msg));
     });
   }
 
-  async getStates() {
-    const r = await this.send({ type: 'get_states' });
-    return r.result || [];
-  }
+  async getStates() { const r = await this.send({ type: 'get_states' }); return r.result || []; }
 
   async subscribeStates(cb) {
     const id = this.msgId++;
@@ -266,11 +518,9 @@ class HAConnection {
     const end   = endIso   || new Date().toISOString();
     const r = await this.send({
       type: 'history/history_during_period',
-      start_time: start,
-      end_time: end,
+      start_time: start, end_time: end,
       entity_ids: entityIds,
-      significant_changes_only: false,
-      no_attributes: true,
+      significant_changes_only: false, no_attributes: true,
     });
     return r.result || {};
   }
@@ -295,37 +545,29 @@ let prevSwitchState = null;
 let overviewBuilt = false;
 let _buildPromise = null;
 let _dynTimer = null;
+let _lastChart2Sessions = [];
 
 // ─────────────────────────────────────────────
-// SESSIE OPSLAG via HA Storage API (WebSocket)
-// Data bewaard in config/.storage/solar_charger_sessions
-// Beschikbaar op elk apparaat, in HA backups
+// SESSIE OPSLAG
 // ─────────────────────────────────────────────
 let _sessionsCache = null;
 
 async function getSessions() {
-  // Gebruik cache als beschikbaar (wordt geïnvalideerd bij opslaan)
   if (_sessionsCache !== null) return _sessionsCache;
   try {
     const r = await ha.send({ type: 'solar_charger/get_sessions' });
     _sessionsCache = r.result?.sessions || [];
-  } catch(e) {
-    console.warn('Sessies ophalen mislukt:', e);
-    _sessionsCache = [];
-  }
+  } catch(e) { _sessionsCache = []; }
   return _sessionsCache;
 }
 
 async function saveSessionToHA(session) {
   try {
     await ha.send({ type: 'solar_charger/save_session', session });
-    _sessionsCache = null; // Invalideer cache
-  } catch(e) {
-    console.error('Sessie opslaan mislukt:', e);
-  }
+    _sessionsCache = null;
+  } catch(e) { console.error('Sessie opslaan mislukt:', e); }
 }
 
-// Huidige actieve sessie tracking
 let activeSession = null;
 
 // ─────────────────────────────────────────────
@@ -333,45 +575,40 @@ let activeSession = null;
 // ─────────────────────────────────────────────
 function getState(id) { return states[id] || { state: 'unavailable', attributes: {} }; }
 function getFloat(id, fb = 0) { const v = parseFloat(getState(id).state); return isNaN(v) ? fb : v; }
-function fmtW(w) { return Math.round(w).toLocaleString('nl'); }
+function fmtW(w) { return Math.round(w).toLocaleString(lang === 'nl' ? 'nl-BE' : 'en'); }
 function fmtKwh(k) { return parseFloat(k).toFixed(2); }
+function _locale() { return lang === 'nl' ? 'nl-BE' : 'en-GB'; }
 function fmtTime(iso) {
   if (!iso || iso === '' || iso === 'unknown') return '—';
   const d = new Date(iso);
-  return isNaN(d) ? '—' : d.toLocaleTimeString('nl', { hour: '2-digit', minute: '2-digit' });
+  return isNaN(d) ? '—' : d.toLocaleTimeString(_locale(), { hour: '2-digit', minute: '2-digit' });
 }
 function fmtDate(iso) {
   if (!iso || iso === '' || iso === 'unknown') return '—';
   const d = new Date(iso);
-  return isNaN(d) ? '—' : d.toLocaleDateString('nl', { day: '2-digit', month: '2-digit' });
+  return isNaN(d) ? '—' : d.toLocaleDateString(_locale(), { day: '2-digit', month: '2-digit' });
 }
 function minsSince(iso) {
   if (!iso || iso === '' || iso === 'unknown') return 0;
   return Math.round((Date.now() - new Date(iso).getTime()) / 60000);
 }
 function fmtDur(mins) {
-  if (mins < 60) return `${mins} min`;
-  return `${Math.floor(mins/60)}u ${mins%60}min`;
+  if (mins < 60) return `${mins} ${t('dur_min')}`;
+  return `${Math.floor(mins/60)}${t('dur_h')} ${mins%60}${t('dur_min')}`;
 }
 
 // ─────────────────────────────────────────────
 // BEREKENINGEN
 // ─────────────────────────────────────────────
 function computeValues() {
-  const p1Raw   = getFloat(cfg.p1_power_sensor, 0);
-  const solar   = getFloat(cfg.solar_power_sensor, 0);
-  const carW    = cfg.charger_power_sensor
+  const p1Raw = getFloat(cfg.p1_power_sensor, 0);
+  const solar = getFloat(cfg.solar_power_sensor, 0);
+  const carW  = cfg.charger_power_sensor
     ? getFloat(cfg.charger_power_sensor, 0)
     : (getState(cfg.charger_switch).state === 'on' ? (cfg.max_charge_kw || 2.3) * 1000 : 0);
-  // P1 negatief = teruglevering
-  // Huisverbruik excl auto = solar + p1Raw - carW (p1Raw positief = afname)
-  const house   = Math.max(solar + p1Raw - carW, 0);
-  // Netto grid flow excl auto: negatief = teruglevering
-  const gridExclCar = p1Raw + carW; // grid zonder auto = wat er zou zijn als auto niet laadde
-  // Teruglevering naar net (positief getal)
+  const house = Math.max(solar + p1Raw - carW, 0);
   const gridReturn = Math.max(-p1Raw, 0);
-
-  return { p1Raw, solar, carW, house, gridExclCar, gridReturn };
+  return { p1Raw, solar, carW, house, gridReturn };
 }
 
 // ─────────────────────────────────────────────
@@ -382,22 +619,18 @@ async function onSwitchChange(newState, oldState) {
   const wasOn = oldState === 'on';
 
   if (chargerOn && !wasOn) {
-    // Sessie gestart
     const v = computeValues();
     activeSession = {
       startIso: new Date().toISOString(),
-      startSurplus: Math.round(-v.p1Raw), // overschot bij start
+      startSurplus: Math.round(-v.p1Raw),
       manual: getState('switch.solar_charger_automation_enabled').state === 'off',
     };
   }
 
   if (!chargerOn && wasOn && activeSession) {
-    // Sessie gestopt — opslaan
     const stopIso = new Date().toISOString();
     const durMins = Math.round((new Date(stopIso) - new Date(activeSession.startIso)) / 60000);
-    const kwhMuur = getFloat('number.solar_charger_energy_today', 0);
     const eff = (cfg.efficiency_percent || 90) / 100;
-    // Lees kWh van de lader meter als beschikbaar
     const chargerKwh = cfg.charger_power_sensor
       ? (getFloat(cfg.charger_power_sensor, 0) / 1000 * durMins / 60)
       : ((cfg.max_charge_kw || 2.3) * durMins / 60);
@@ -407,15 +640,12 @@ async function onSwitchChange(newState, oldState) {
 
     const sessions = await getSessions();
     sessions.unshift({
-      startIso: activeSession.startIso,
-      stopIso,
-      durMins,
+      startIso: activeSession.startIso, stopIso, durMins,
       kwhMuur: parseFloat(chargerKwh.toFixed(3)),
       kwhAccu: parseFloat((chargerKwh * eff).toFixed(3)),
       startSurplus: activeSession.startSurplus,
       status: activeSession.manual ? 'manual' : noplug ? 'noplug' : 'ok',
     });
-    // Bewaar max 200 sessies
     if (sessions.length > 200) sessions.splice(200);
     await saveSessionToHA(sessions[0]);
     refreshOverviewLog();
@@ -428,7 +658,7 @@ async function onSwitchChange(newState, oldState) {
 // ─────────────────────────────────────────────
 function buildLogRows(sessions) {
   if (sessions.length === 0)
-    return `<tr><td colspan="8" class="empty-log">Nog geen laadsessies geregistreerd</td></tr>`;
+    return `<tr><td colspan="8" class="empty-log">${t('log_empty')}</td></tr>`;
   return sessions.map(s => `<tr>
       <td>${fmtDate(s.startIso)}</td>
       <td>${fmtTime(s.startIso)}</td>
@@ -444,6 +674,7 @@ function buildLogRows(sessions) {
 async function buildOverviewShell() {
   const allSessions = await getSessions();
   const logRows = buildLogRows(allSessions.slice(0, 10));
+  const eff = cfg.efficiency_percent || 90;
 
   document.getElementById('tab-overview').innerHTML = `
     <div class="panel-header">
@@ -456,24 +687,24 @@ async function buildOverviewShell() {
 
     <div class="meters">
       <div class="meter m-solar">
-        <div class="m-lbl">☀️ Zonnepanelen</div>
+        <div class="m-lbl">${t('meter_solar')}</div>
         <div class="m-val" id="mv-solar">—<span class="m-unit"> W</span></div>
-        <div class="m-sub">huidig vermogen</div>
+        <div class="m-sub">${t('meter_solar_sub')}</div>
       </div>
       <div class="meter m-house">
-        <div class="m-lbl">🏠 Huisverbruik</div>
+        <div class="m-lbl">${t('meter_house')}</div>
         <div class="m-val" id="mv-house">—<span class="m-unit"> W</span></div>
-        <div class="m-sub">excl. lading</div>
+        <div class="m-sub">${t('meter_house_sub')}</div>
       </div>
       <div class="meter m-car">
-        <div class="m-lbl">🔋 Batterij laden</div>
+        <div class="m-lbl">${t('meter_battery')}</div>
         <div class="m-val" id="mv-car">—<span class="m-unit"> W</span></div>
         <div class="m-sub" id="mv-car-sub">—</div>
       </div>
       <div class="meter m-grid">
-        <div class="m-lbl">📡 Teruglevering</div>
+        <div class="m-lbl">${t('meter_grid')}</div>
         <div class="m-val" id="mv-grid">—<span class="m-unit"> W</span></div>
-        <div class="m-sub">naar het net</div>
+        <div class="m-sub">${t('meter_grid_sub')}</div>
       </div>
     </div>
 
@@ -482,55 +713,55 @@ async function buildOverviewShell() {
     <div class="chart-card">
       <div class="chart-head">
         <div>
-          <div class="chart-title">Afname / teruglevering net</div>
-          <div class="chart-sub">Blauw = afname van net &nbsp;·&nbsp; Paars = teruglevering naar net &nbsp;·&nbsp; Groen = batterij laden (rechts)</div>
+          <div class="chart-title">${t('chart1_title')}</div>
+          <div class="chart-sub">${t('chart1_sub')}</div>
         </div>
         <div class="chart-leg">
-          <span><span class="ld" style="background:linear-gradient(to right,#3b82f6,#8b5cf6)"></span>Afname (blauw) / Teruglevering (paars)</span>
-          <span><span class="ld" style="background:#16a34a"></span>Batterij laden</span>
-          <span><span class="ld-dash" style="border-top:2px dashed #f59e0b"></span>Drempel</span>
+          <span><span class="ld" style="background:linear-gradient(to right,#3b82f6,#8b5cf6)"></span>${t('chart1_leg_p1')}</span>
+          <span><span class="ld" style="background:#16a34a"></span>${t('chart1_leg_bat')}</span>
+          <span><span class="ld-dash" style="border-top:2px dashed #f59e0b"></span>${t('chart1_leg_thr')}</span>
         </div>
       </div>
       <div class="range-btns">
-        <button class="rbtn ${chart1Range==='1h'?'on':''}" onclick="setChart1Range('1h',this)">1u</button>
-        <button class="rbtn ${chart1Range==='today'?'on':''}" onclick="setChart1Range('today',this)">Vandaag</button>
-        <button class="rbtn ${chart1Range==='7d'?'on':''}" onclick="setChart1Range('7d',this)">7 dagen</button>
-        <span style="font-size:10px;color:#9ca3af;margin-left:4px">of:</span>
+        <button class="rbtn ${chart1Range==='1h'?'on':''}" onclick="setChart1Range('1h',this)">${t('chart1_1h')}</button>
+        <button class="rbtn ${chart1Range==='today'?'on':''}" onclick="setChart1Range('today',this)">${t('chart1_today')}</button>
+        <button class="rbtn ${chart1Range==='7d'?'on':''}" onclick="setChart1Range('7d',this)">${t('chart1_7d')}</button>
+        <span style="font-size:10px;color:var(--text4);margin-left:4px">${t('chart1_or')}</span>
         <input type="date" id="c1-from">
-        <span style="font-size:11px;color:#9ca3af">→</span>
+        <span style="font-size:11px;color:var(--text4)">→</span>
         <input type="date" id="c1-to">
-        <button class="rbtn" onclick="applyChart1Date()" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534">Pas toe</button>
+        <button class="rbtn" onclick="applyChart1Date()" style="background:var(--green-bg);border-color:var(--green-border);color:var(--green-text)">${t('chart1_apply')}</button>
       </div>
       <canvas id="chart1" height="110"></canvas>
-      <div class="zoom-hint">💡 Scroll om in/uit te zoomen &nbsp;·&nbsp; sleep om te pannen &nbsp;·&nbsp; dubbelklik om te resetten</div>
+      <div class="zoom-hint">${t('chart1_hint')}</div>
     </div>
 
     <div class="stats">
       <div class="stat">
-        <div class="stat-lbl">Vandaag geladen</div>
+        <div class="stat-lbl">${t('stat_today')}</div>
         <div class="stat-val" id="ov-stat-today">—<span class="stat-unit"> kWh</span></div>
       </div>
       <div class="stat">
-        <div class="stat-lbl">In accu (~${cfg.efficiency_percent || 90}%)</div>
+        <div class="stat-lbl">${t('stat_battery').replace('{eff}', eff)}</div>
         <div class="stat-val" id="ov-stat-batt">—<span class="stat-unit"> kWh</span></div>
       </div>
       <div class="stat">
-        <div class="stat-lbl">Sessies vandaag</div>
+        <div class="stat-lbl">${t('stat_sessions')}</div>
         <div class="stat-val" id="ov-stat-sessions">—</div>
       </div>
       <div class="stat">
-        <div class="stat-lbl">Totaal ooit</div>
+        <div class="stat-lbl">${t('stat_total')}</div>
         <div class="stat-val" id="ov-stat-total">—<span class="stat-unit"> kWh</span></div>
       </div>
     </div>
 
     <div class="log-card">
-      <div class="log-title">📋 Laatste 10 laadsessies</div>
+      <div class="log-title">${t('log_last10')}</div>
       <div class="log-wrap">
         <table class="log-table">
           <thead><tr>
-            <th>Datum</th><th>Start</th><th>Stop</th><th>Duur</th>
-            <th>kWh (muur)</th><th>kWh (accu)</th><th>Overschot bij start</th><th>Status</th>
+            <th>${t('col_date')}</th><th>${t('col_start')}</th><th>${t('col_stop')}</th><th>${t('col_dur')}</th>
+            <th>${t('col_kwh_wall')}</th><th>${t('col_kwh_bat')}</th><th>${t('col_surplus')}</th><th>${t('col_status')}</th>
           </tr></thead>
           <tbody id="ov-log-body">${logRows}</tbody>
         </table>
@@ -551,7 +782,6 @@ async function updateOverviewDynamic() {
   const energyBatt  = getFloat('number.solar_charger_energy_in_battery_today', 0);
   const energyTotal = getFloat('number.solar_charger_energy_total', 0);
 
-  // Meters
   const mvSolar  = document.getElementById('mv-solar');
   const mvHouse  = document.getElementById('mv-house');
   const mvCar    = document.getElementById('mv-car');
@@ -561,21 +791,19 @@ async function updateOverviewDynamic() {
   if (mvHouse)  mvHouse.innerHTML  = `${fmtW(v.house)}<span class="m-unit"> W</span>`;
   if (mvCar)    mvCar.innerHTML    = `${fmtW(v.carW)}<span class="m-unit"> W</span>`;
   if (mvGrid)   mvGrid.innerHTML   = `${fmtW(v.gridReturn)}<span class="m-unit"> W</span>`;
-  if (mvCarSub) mvCarSub.textContent = chargerOn ? 'actief' : 'niet actief';
+  if (mvCarSub) mvCarSub.textContent = chargerOn ? t('meter_battery_on') : t('meter_battery_off');
 
-  // Status pill
   const noplug = chargerOn && v.carW < (cfg.noplug_threshold_w || 50);
   const autoOn = getState('switch.solar_charger_automation_enabled').state === 'on';
   let pillHtml = '';
-  if (noplug) pillHtml = `<span class="pill pill-noplug">⚠️ Schakelaar aan — batterij niet aangesloten</span>`;
-  else if (chargerOn) pillHtml = `<span class="pill pill-on">⚡ Laden actief</span>`;
-  else if (!autoOn) pillHtml = `<span class="pill pill-off">⏸️ Automatisering niet actief — schakel in via Instellingen</span>`;
-  else if (-v.p1Raw >= (cfg.min_surplus_w || 500)) pillHtml = `<span class="pill pill-wait">☀️ Overschot beschikbaar — wachten op vertraging</span>`;
-  else pillHtml = `<span class="pill pill-off">🌙 Wachten op overschot</span>`;
+  if (noplug)        pillHtml = `<span class="pill pill-noplug">${t('pill_noplug')}</span>`;
+  else if (chargerOn) pillHtml = `<span class="pill pill-on">${t('pill_charging')}</span>`;
+  else if (!autoOn)  pillHtml = `<span class="pill pill-off">${t('pill_off')}</span>`;
+  else if (-v.p1Raw >= (cfg.min_surplus_w || 500)) pillHtml = `<span class="pill pill-wait">${t('pill_surplus')}</span>`;
+  else               pillHtml = `<span class="pill pill-off">${t('pill_waiting')}</span>`;
   const pillWrap = document.getElementById('ov-pill-wrap');
   if (pillWrap) pillWrap.innerHTML = pillHtml;
 
-  // Sessie live kWh
   let sessionKwh = 0;
   if (chargerOn && startIso && startIso !== '' && startIso !== 'unknown') {
     const hours = (Date.now() - new Date(startIso).getTime()) / 3600000;
@@ -585,29 +813,27 @@ async function updateOverviewDynamic() {
     sessionKwh = hours * powerKw;
   }
 
-  // Sessie banner
   let bannerHtml = '';
   if (chargerOn && startIso && startIso !== '' && startIso !== 'unknown') {
     const mins = minsSince(startIso);
     const startSurplus = activeSession ? activeSession.startSurplus : '—';
     const cls = noplug ? 'noplug' : 'active';
     const dotCls = noplug ? 'dot-orange' : 'dot-green';
-    const title = noplug ? 'Schakelaar aan — batterij niet aangesloten' : 'Laadsessie actief';
-    const titleColor = noplug ? '#9a3412' : '#166634';
+    const title = noplug ? t('sess_noplug') : t('sess_active');
     bannerHtml = `
       <div class="session-card ${cls}">
         <div class="session-dot ${dotCls}"></div>
         <div class="session-info">
-          <div class="session-title" style="color:${titleColor}">${title}</div>
+          <div class="session-title">${title}</div>
           <div class="session-meta">
-            <span>⏱ Gestart om ${fmtTime(startIso)}</span>
-            <span>⌛ ${fmtDur(mins)} geleden</span>
-            ${startSurplus !== '—' ? `<span>📡 Overschot bij start: ${startSurplus} W</span>` : ''}
+            <span>${t('sess_started')} ${fmtTime(startIso)}</span>
+            <span>⌛ ${fmtDur(mins)} ${t('sess_ago_suffix')}</span>
+            ${startSurplus !== '—' ? `<span>${t('sess_surplus')} ${startSurplus} W</span>` : ''}
           </div>
         </div>
         <div class="session-kwh">
           <div class="session-kwh-val">${fmtKwh(sessionKwh)} <span style="font-size:12px;font-weight:500">kWh</span></div>
-          <div class="session-kwh-lbl">deze sessie</div>
+          <div class="session-kwh-lbl">${t('sess_this')}</div>
         </div>
       </div>`;
   } else if (allSessions.length > 0) {
@@ -616,23 +842,22 @@ async function updateOverviewDynamic() {
       <div class="session-card">
         <div class="session-dot dot-grey"></div>
         <div class="session-info">
-          <div class="session-title" style="color:#6b7280">Laatste sessie — ${fmtDate(last.startIso)}</div>
+          <div class="session-title" style="color:var(--text3)">${t('sess_last')} ${fmtDate(last.startIso)}</div>
           <div class="session-meta">
             <span>⏱ ${fmtTime(last.startIso)} – ${fmtTime(last.stopIso)}</span>
             <span>⌛ ${fmtDur(last.durMins)}</span>
-            <span>📡 Overschot bij start: ${last.startSurplus} W</span>
+            <span>${t('sess_surplus')} ${last.startSurplus} W</span>
           </div>
         </div>
         <div class="session-kwh">
-          <div class="session-kwh-val" style="color:#6b7280">${fmtKwh(last.kwhMuur)} <span style="font-size:12px;font-weight:500">kWh</span></div>
-          <div class="session-kwh-lbl">laatste sessie</div>
+          <div class="session-kwh-val inactive">${fmtKwh(last.kwhMuur)} <span style="font-size:12px;font-weight:500">kWh</span></div>
+          <div class="session-kwh-lbl">${t('sess_last_lbl')}</div>
         </div>
       </div>`;
   }
   const sessionEl = document.getElementById('ov-session');
   if (sessionEl) sessionEl.innerHTML = bannerHtml;
 
-  // Stats
   const todayCount = allSessions.filter(s => {
     const d = new Date(s.startIso); const n = new Date();
     return d.getDate()===n.getDate()&&d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();
@@ -665,7 +890,7 @@ async function renderOverview() {
 }
 
 // ─────────────────────────────────────────────
-// GRAFIEK 1 — P1 netbalans + batterij laden
+// GRAFIEK 1
 // ─────────────────────────────────────────────
 async function renderChart1() {
   const hours = chart1Range === '1h' ? 1 : chart1Range === 'today' ? 24 : 168;
@@ -679,15 +904,15 @@ async function renderChart1() {
   const p1History  = history[cfg.p1_power_sensor] || [];
   const carHistory = cfg.charger_power_sensor ? (history[cfg.charger_power_sensor] || []) : [];
 
+  const locale = _locale();
   const labels = [], p1D = [], carD = [];
   p1History.forEach(point => {
     const v = parseFloat(point.s);
     if (isNaN(v)) return;
-    labels.push(new Date(point.lu * 1000).toLocaleTimeString('nl', { hour: '2-digit', minute: '2-digit' }));
+    labels.push(new Date(point.lu * 1000).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }));
     p1D.push(v);
   });
 
-  // Interpoleer laderdata naar P1-tijdstempels
   if (carHistory.length > 0) {
     p1History.forEach(p1pt => {
       let closest = carHistory[0];
@@ -703,7 +928,6 @@ async function renderChart1() {
 
   const canvas = document.getElementById('chart1');
   if (!canvas) return;
-
   if (chart1) { chart1.destroy(); chart1 = null; }
 
   const threshold = -(cfg.min_surplus_w || 500);
@@ -714,12 +938,10 @@ async function renderChart1() {
       labels,
       datasets: [
         {
-          label: 'Netbalans',
+          label: t('chart1_leg_p1'),
           data: p1D,
           borderColor: '#3b82f6',
-          segment: {
-            borderColor: ctx => ctx.p0.parsed.y >= 0 ? '#3b82f6' : '#8b5cf6',
-          },
+          segment: { borderColor: ctx => ctx.p0.parsed.y >= 0 ? '#3b82f6' : '#8b5cf6' },
           backgroundColor: ctx => {
             const chart = ctx.chart;
             const { ctx: c, chartArea } = chart;
@@ -733,82 +955,62 @@ async function renderChart1() {
             grad.addColorStop(1, 'rgba(139,92,246,0.25)');
             return grad;
           },
-          fill: 'origin',
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: 2,
-          yAxisID: 'y',
+          fill: 'origin', tension: 0.3, pointRadius: 0, borderWidth: 2, yAxisID: 'y',
         },
         {
-          label: 'Batterij laden',
+          label: t('chart1_leg_bat'),
           data: carD,
           borderColor: '#16a34a',
           backgroundColor: 'rgba(22,163,74,0.15)',
-          fill: 'origin',
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: 2,
-          spanGaps: true,
-          yAxisID: 'yright',
+          fill: 'origin', tension: 0.3, pointRadius: 0, borderWidth: 2,
+          spanGaps: true, yAxisID: 'yright',
         },
         {
-          label: 'Drempel',
+          label: t('chart1_leg_thr'),
           data: Array(labels.length).fill(threshold),
-          borderColor: '#f59e0b',
-          borderDash: [5, 4],
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-          yAxisID: 'y',
+          borderColor: '#f59e0b', borderDash: [5, 4], borderWidth: 1.5,
+          pointRadius: 0, fill: false, yAxisID: 'y',
         },
       ],
     },
     options: {
-      responsive: true,
-      animation: false,
+      responsive: true, animation: false,
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#1f2937',
-          titleColor: '#9ca3af',
-          bodyColor: '#f9fafb',
-          borderColor: '#374151',
-          borderWidth: 1,
-          mode: 'index',
-          intersect: false,
+          backgroundColor: tooltipBg(), titleColor: axisColor(),
+          bodyColor: isDark() ? '#f3f4f6' : '#f9fafb',
+          borderColor: isDark() ? '#4b5563' : '#374151', borderWidth: 1,
+          mode: 'index', intersect: false,
           callbacks: {
             label: ctx => {
               if (ctx.datasetIndex === 0) {
                 const v = ctx.parsed.y;
-                if (v > 0) return ` Afname net: ${Math.round(v)} W`;
-                if (v < 0) return ` Teruglevering: ${Math.abs(Math.round(v))} W`;
+                if (v > 0) return ` ${t('tip_take')}: ${Math.round(v)} W`;
+                if (v < 0) return ` ${t('tip_return')}: ${Math.abs(Math.round(v))} W`;
                 return null;
               }
               if (ctx.datasetIndex === 1 && ctx.parsed.y > 0)
-                return ` Batterij laden: ${Math.round(ctx.parsed.y)} W`;
+                return ` ${t('tip_battery')}: ${Math.round(ctx.parsed.y)} W`;
               if (ctx.datasetIndex === 2)
-                return ` Drempel: ${Math.abs(Math.round(ctx.parsed.y))} W`;
+                return ` ${t('tip_threshold')}: ${Math.abs(Math.round(ctx.parsed.y))} W`;
               return null;
             },
           },
         },
         zoom: {
           pan: { enabled: true, mode: 'x' },
-          zoom: {
-            wheel: { enabled: true },
-            pinch: { enabled: true },
-            mode: 'x',
-          },
+          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
         },
       },
       scales: {
         x: {
-          grid: { color: '#f3f4f6' },
-          ticks: { color: '#9ca3af', font: { size: 10 }, maxTicksLimit: 8 },
+          grid: { color: gridColor() },
+          ticks: { color: tickColor(), font: { size: 10 }, maxTicksLimit: 8 },
         },
         y: {
           grid: {
-            color: ctx => ctx.tick.value === 0 ? '#9ca3af' : '#f3f4f6',
+            color: ctx => ctx.tick.value === 0 ? gridZero() : gridColor(),
             lineWidth: ctx => ctx.tick.value === 0 ? 2 : 1,
           },
           ticks: {
@@ -816,18 +1018,13 @@ async function renderChart1() {
             font: { size: 10 },
             callback: v => v > 0 ? `+${Math.round(v)}W` : `${Math.round(v)}W`,
           },
-          title: { display: true, text: '↑ afname  |  teruglevering ↓', color: '#9ca3af', font: { size: 10 } },
+          title: { display: true, text: t('chart1_yaxis'), color: axisColor(), font: { size: 10 } },
         },
         yright: {
-          position: 'right',
-          min: 0,
+          position: 'right', min: 0,
           grid: { display: false },
-          ticks: {
-            color: '#16a34a',
-            font: { size: 10 },
-            callback: v => v > 0 ? `${Math.round(v)}W` : '',
-          },
-          title: { display: true, text: 'Lading (W)', color: '#16a34a', font: { size: 10 } },
+          ticks: { color: '#16a34a', font: { size: 10 }, callback: v => v > 0 ? `${Math.round(v)}W` : '' },
+          title: { display: true, text: t('chart1_yright'), color: '#16a34a', font: { size: 10 } },
         },
       },
     },
@@ -838,8 +1035,8 @@ function setChart1Range(range, btn) {
   chart1Range = range;
   chart1StartIso = null;
   chart1EndIso = null;
-  const f = document.getElementById('c1-from'); if (f) f.value = '';
-  const t = document.getElementById('c1-to');   if (t) t.value = '';
+  const fromEl = document.getElementById('c1-from'); if (fromEl) fromEl.value = '';
+  const toEl   = document.getElementById('c1-to');   if (toEl)   toEl.value = '';
   document.querySelectorAll('#tab-overview .rbtn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   renderChart1();
@@ -867,45 +1064,45 @@ async function renderHistory() {
     <div class="chart-card">
       <div class="chart-head">
         <div>
-          <div class="chart-title">Geladen energie per sessie</div>
-          <div class="chart-sub">kWh gemeten aan de schakelaar &nbsp;·&nbsp; oranje = batterij niet aangesloten</div>
+          <div class="chart-title">${t('chart2_title')}</div>
+          <div class="chart-sub">${t('chart2_sub')}</div>
         </div>
         <div class="chart-leg">
-          <span><span class="ld" style="background:#16a34a"></span>Geladen (kWh)</span>
-          <span><span class="ld" style="background:#f97316"></span>Niet ingeplugd</span>
+          <span><span class="ld" style="background:#16a34a"></span>${t('chart2_ok')}</span>
+          <span><span class="ld" style="background:#f97316"></span>${t('chart2_noplug')}</span>
         </div>
       </div>
       <div class="range-btns">
         <button class="rbtn" onclick="setChart2Range(7,this)">7d</button>
         <button class="rbtn on" onclick="setChart2Range(30,this)">30d</button>
         <button class="rbtn" onclick="setChart2Range(90,this)">3m</button>
-        <button class="rbtn" onclick="setChart2Range(365,this)">1j</button>
-        <span style="font-size:10px;color:#9ca3af;margin-left:4px">of:</span>
+        <button class="rbtn" onclick="setChart2Range(365,this)">${t('range_1y')}</button>
+        <span style="font-size:10px;color:var(--text4);margin-left:4px">${t('chart1_or')}</span>
         <input type="date" id="c2-from">
-        <span style="font-size:11px;color:#9ca3af">→</span>
+        <span style="font-size:11px;color:var(--text4)">→</span>
         <input type="date" id="c2-to">
-        <button class="rbtn" onclick="applyChart2Date()" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534">Pas toe</button>
+        <button class="rbtn" onclick="applyChart2Date()" style="background:var(--green-bg);border-color:var(--green-border);color:var(--green-text)">${t('log_apply')}</button>
       </div>
       <canvas id="chart2" height="110"></canvas>
-      <div class="zoom-hint">💡 Sleep om te pannen · scroll om in/uit te zoomen · dubbelklik om te resetten</div>
+      <div class="zoom-hint">${t('chart2_hint')}</div>
     </div>
 
     <div class="log-card">
-      <div class="log-title">📋 Alle laadsessies</div>
+      <div class="log-title">${t('log_all')}</div>
       <div class="filter-row">
-        <span class="filter-label">Filter:</span>
+        <span class="filter-label">${t('log_filter')}</span>
         <input type="date" id="log-from">
-        <span style="font-size:11px;color:#9ca3af">→</span>
+        <span style="font-size:11px;color:var(--text4)">→</span>
         <input type="date" id="log-to">
-        <button class="rbtn" onclick="applyLogFilter()" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534">Zoeken</button>
-        <button class="rbtn" onclick="resetLogFilter()">Reset</button>
-        <span id="log-count" style="font-size:11px;color:#9ca3af;margin-left:auto"></span>
+        <button class="rbtn" onclick="applyLogFilter()" style="background:var(--green-bg);border-color:var(--green-border);color:var(--green-text)">${t('log_search')}</button>
+        <button class="rbtn" onclick="resetLogFilter()">${t('log_reset')}</button>
+        <span id="log-count" style="font-size:11px;color:var(--text4);margin-left:auto"></span>
       </div>
       <div class="log-wrap">
         <table class="log-table">
           <thead><tr>
-            <th>Datum</th><th>Start</th><th>Stop</th><th>Duur</th>
-            <th>kWh (muur)</th><th>kWh (accu)</th><th>Overschot bij start</th><th>Status</th>
+            <th>${t('col_date')}</th><th>${t('col_start')}</th><th>${t('col_stop')}</th><th>${t('col_dur')}</th>
+            <th>${t('col_kwh_wall')}</th><th>${t('col_kwh_bat')}</th><th>${t('col_surplus')}</th><th>${t('col_status')}</th>
           </tr></thead>
           <tbody id="hist-log-body"></tbody>
         </table>
@@ -928,7 +1125,7 @@ function renderHistLog() {
   const slice = histFiltered.slice((histPage-1)*HIST_PER_PAGE, histPage*HIST_PER_PAGE);
 
   const rows = slice.length === 0
-    ? `<tr><td colspan="8" class="empty-log">Geen sessies gevonden</td></tr>`
+    ? `<tr><td colspan="8" class="empty-log">${t('log_empty2')}</td></tr>`
     : slice.map(s => `<tr>
         <td>${fmtDate(s.startIso)}</td>
         <td>${fmtTime(s.startIso)}</td>
@@ -941,7 +1138,8 @@ function renderHistLog() {
       </tr>`).join('');
 
   document.getElementById('hist-log-body').innerHTML = rows;
-  document.getElementById('hist-page-info').textContent = `${total} sessies · pagina ${histPage} van ${pages}`;
+  document.getElementById('hist-page-info').textContent =
+    t('log_page').replace('{total}', total).replace('{page}', histPage).replace('{pages}', pages);
   const pb = document.getElementById('hist-page-btns');
   pb.innerHTML = '';
   for (let p = 1; p <= pages; p++) {
@@ -951,8 +1149,8 @@ function renderHistLog() {
     b.onclick = () => { histPage=p; renderHistLog(); };
     pb.appendChild(b);
   }
-  if (document.getElementById('log-count'))
-    document.getElementById('log-count').textContent = `${total} sessies`;
+  const lc = document.getElementById('log-count');
+  if (lc) lc.textContent = t('log_count').replace('{total}', total);
 }
 
 async function applyLogFilter() {
@@ -991,6 +1189,8 @@ async function applyChart2Date() {
 }
 
 function renderChart2(sessions) {
+  _lastChart2Sessions = sessions;
+  const locale = _locale();
   const labels  = sessions.map(s => fmtDate(s.startIso) + ' ' + fmtTime(s.startIso));
   const kwhOk   = sessions.map(s => s.status === 'noplug' ? 0 : s.kwhMuur);
   const kwhBad  = sessions.map(s => s.status === 'noplug' ? s.kwhMuur : 0);
@@ -1002,8 +1202,8 @@ function renderChart2(sessions) {
     data: {
       labels,
       datasets: [
-        { label: 'Geladen (kWh)', data: kwhOk,  backgroundColor: '#16a34a', borderRadius: 3, borderSkipped: false },
-        { label: 'Niet ingeplugd', data: kwhBad, backgroundColor: '#f97316', borderRadius: 3, borderSkipped: false },
+        { label: t('chart2_ok'),    data: kwhOk,  backgroundColor: '#16a34a', borderRadius: 3, borderSkipped: false },
+        { label: t('chart2_noplug'), data: kwhBad, backgroundColor: '#f97316', borderRadius: 3, borderSkipped: false },
       ],
     },
     options: {
@@ -1011,8 +1211,9 @@ function renderChart2(sessions) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#1f2937', titleColor: '#9ca3af', bodyColor: '#f9fafb',
-          borderColor: '#374151', borderWidth: 1,
+          backgroundColor: tooltipBg(), titleColor: axisColor(),
+          bodyColor: isDark() ? '#f3f4f6' : '#f9fafb',
+          borderColor: isDark() ? '#4b5563' : '#374151', borderWidth: 1,
           callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} kWh` },
         },
         zoom: {
@@ -1021,9 +1222,9 @@ function renderChart2(sessions) {
         },
       },
       scales: {
-        x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 10 }, maxRotation: 45, maxTicksLimit: 14 } },
-        y: { grid: { color: '#f3f4f6' }, ticks: { color: '#9ca3af', font: { size: 10 } }, beginAtZero: true,
-          title: { display: true, text: 'kWh', color: '#9ca3af', font: { size: 10 } } },
+        x: { grid: { display: false }, ticks: { color: tickColor(), font: { size: 10 }, maxRotation: 45, maxTicksLimit: 14 } },
+        y: { grid: { color: gridColor() }, ticks: { color: tickColor(), font: { size: 10 } }, beginAtZero: true,
+          title: { display: true, text: 'kWh', color: axisColor(), font: { size: 10 } } },
       },
     },
   });
@@ -1042,45 +1243,41 @@ function renderSettings() {
   const autoEnabled = getState('switch.solar_charger_automation_enabled').state === 'on';
 
   const sensors = [
-    ['P1 netstroom', cfg.p1_power_sensor],
-    ['Zonnepanelen', cfg.solar_power_sensor],
-    ['Lader schakelaar', cfg.charger_switch],
-    ['Lader vermogen', cfg.charger_power_sensor || '(niet geconfigureerd)'],
+    [t('sens_p1'),     cfg.p1_power_sensor],
+    [t('sens_solar'),  cfg.solar_power_sensor],
+    [t('sens_switch'), cfg.charger_switch],
+    [t('sens_power'),  cfg.charger_power_sensor || t('sens_not_cfg')],
   ];
 
   document.getElementById('tab-settings').innerHTML = `
     <div class="settings-card">
-      <div class="settings-title">Automatisering</div>
-      ${settingToggle('Automatisering actief', 'switch.solar_charger_automation_enabled', autoEnabled)}
-      ${settingNumber('Minimaal overschot om te laden', 'min_surplus_w', cfg.min_surplus_w || 500, 'W', 0, 5000, 50)}
-      ${settingNumber('Vertraging inschakelen', 'delay_on_seconds', cfg.delay_on_seconds || 120, 's', 30, 600, 30)}
-      ${settingNumber('Vertraging uitschakelen', 'delay_off_seconds', cfg.delay_off_seconds || 180, 's', 30, 600, 30)}
+      <div class="settings-title">${t('set_automation')}</div>
+      ${settingToggle(t('set_auto_toggle'), 'switch.solar_charger_automation_enabled', autoEnabled)}
+      ${settingNumber(t('set_min_surplus'), 'min_surplus_w', cfg.min_surplus_w || 500, 'W', 0, 5000, 50)}
+      ${settingNumber(t('set_delay_on'), 'delay_on_seconds', cfg.delay_on_seconds || 120, 's', 30, 600, 30)}
+      ${settingNumber(t('set_delay_off'), 'delay_off_seconds', cfg.delay_off_seconds || 180, 's', 30, 600, 30)}
     </div>
 
     <div class="settings-card">
-      <div class="settings-title">Energie tracking</div>
-      ${settingNumberInfo('Laadefficiëntie', 'efficiency_percent', cfg.efficiency_percent || 90, '%', 70, 100, 1,
-        'Niet alle stroom die de schakelaar meet komt in de accu terecht — een deel gaat verloren als warmte in de lader en kabels.<br><br>Voorbeeld: schakelaar meet 2,3 kWh · efficiëntie 90% → 2,07 kWh in de accu.<br><br>Typische waarde: 88–93%. Vergelijk het dashboard met je auto-app na een sessie om dit bij te stellen.')}
-      ${settingNumberInfo('Drempel "niet ingeplugd"', 'noplug_threshold_w', cfg.noplug_threshold_w || 50, 'W', 0, 200, 10,
-        'Als de schakelaar AAN staat maar de energiemeter minder dan dit aantal watt meet, wordt aangenomen dat de batterij niet aangesloten is. Die sessie wordt oranje gemarkeerd in het logboek.<br><br>Aanbevolen: 50 W.')}
+      <div class="settings-title">${t('set_energy')}</div>
+      ${settingNumberInfo(t('set_efficiency'), 'efficiency_percent', cfg.efficiency_percent || 90, '%', 70, 100, 1, t('set_efficiency_tip'))}
+      ${settingNumberInfo(t('set_noplug'), 'noplug_threshold_w', cfg.noplug_threshold_w || 50, 'W', 0, 200, 10, t('set_noplug_tip'))}
     </div>
 
     <div class="settings-card">
-      <div class="sens-title">Geconfigureerde sensoren</div>
+      <div class="sens-title">${t('set_sensors')}</div>
       ${sensors.map(([name, id]) => {
-        if (!id) return '';
+        if (!id || id === t('sens_not_cfg')) return '';
         const s = getState(id);
         const ok = s.state !== 'unavailable' && s.state !== 'unknown';
         return `<div class="sens-row">
           <span class="sens-dot" style="background:${ok?'#16a34a':'#ef4444'}"></span>
           <span class="sens-name">${name}</span>
           <span class="sens-id">${id}</span>
-          <span class="sens-state">${s.state !== 'unavailable' ? s.state + (s.attributes.unit_of_measurement||'') : '⚠️ unavailable'}</span>
+          <span class="sens-state">${s.state !== 'unavailable' ? s.state + (s.attributes.unit_of_measurement||'') : t('sens_unavailable')}</span>
         </div>`;
       }).join('')}
-      <div style="margin-top:10px;font-size:11px;color:#9ca3af">
-        Sensoren wijzigen via <strong>Instellingen → Integraties → SolarCharge → Opties</strong>
-      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text4)">${t('set_sensors_note')}</div>
     </div>`;
 }
 
@@ -1100,22 +1297,22 @@ function settingNumber(label, key, val, unit, min, max, step) {
     <div class="srow-ctrl">
       <input class="sinput" id="set-${key}" type="number" value="${val}" min="${min}" max="${max}" step="${step}">
       <span class="sunit">${unit}</span>
-      <button class="sbtn" id="btn-${key}" onclick="saveSetting('${key}')">Sla op</button>
+      <button class="sbtn" id="btn-${key}" onclick="saveSetting('${key}')">${t('set_save')}</button>
     </div>
   </div>`;
 }
 
-function settingNumberInfo(label, key, val, unit, min, max, step, tooltip) {
+function settingNumberInfo(label, key, val, unit, min, max, step, tooltipHtml) {
   return `<div class="srow">
     <div class="srow-left">
       <div class="srow-lbl">${label}
-        <div class="info-btn">?<div class="tooltip">${tooltip}</div></div>
+        <div class="info-btn">?<div class="tooltip">${tooltipHtml}</div></div>
       </div>
     </div>
     <div class="srow-ctrl">
       <input class="sinput" id="set-${key}" type="number" value="${val}" min="${min}" max="${max}" step="${step}">
       <span class="sunit">${unit}</span>
-      <button class="sbtn" id="btn-${key}" onclick="saveSetting('${key}')">Sla op</button>
+      <button class="sbtn" id="btn-${key}" onclick="saveSetting('${key}')">${t('set_save')}</button>
     </div>
   </div>`;
 }
@@ -1136,7 +1333,6 @@ async function saveSetting(key) {
   if (!input || !btn) return;
   const val = parseFloat(input.value);
   cfg[key] = val;
-  // Persisteer in config via input_number helpers indien aanwezig
   const entityMap = {
     min_surplus_w:       'number.solar_charger_min_surplus',
     delay_on_seconds:    'number.solar_charger_delay_on',
@@ -1148,23 +1344,23 @@ async function saveSetting(key) {
   if (entityId && states[entityId] !== undefined) {
     await ha.callService('number', 'set_value', { entity_id: entityId, value: val });
   }
-  btn.textContent = '✓ Opgeslagen';
+  btn.textContent = t('set_saved');
   btn.classList.add('saved');
-  setTimeout(() => { btn.textContent = 'Sla op'; btn.classList.remove('saved'); }, 2000);
+  setTimeout(() => { btn.textContent = t('set_save'); btn.classList.remove('saved'); }, 2000);
 }
 
 // ─────────────────────────────────────────────
 // HELPERS UI
 // ─────────────────────────────────────────────
 function badgeHtml(status) {
-  if (status === 'noplug') return `<span class="log-badge badge-noplug">⚠️ Niet ingeplugd</span>`;
-  if (status === 'manual') return `<span class="log-badge badge-manual">✋ Handmatig</span>`;
-  return `<span class="log-badge badge-ok">✓ Voltooid</span>`;
+  if (status === 'noplug') return `<span class="log-badge badge-noplug">${t('badge_noplug')}</span>`;
+  if (status === 'manual') return `<span class="log-badge badge-manual">${t('badge_manual')}</span>`;
+  return `<span class="log-badge badge-ok">${t('badge_ok')}</span>`;
 }
 
 async function switchTab(name, el) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('on'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('on'));
   document.getElementById('tab-' + name).classList.add('on');
   el.classList.add('on');
   if (name === 'history') await renderHistory();
@@ -1192,16 +1388,11 @@ function onStateChange(event) {
   const { entity_id, new_state, old_state } = event.data;
   if (!new_state) return;
   states[entity_id] = new_state;
-
-  // Sessie tracking
   if (entity_id === cfg.charger_switch) {
     onSwitchChange(new_state.state, old_state ? old_state.state : prevSwitchState);
     prevSwitchState = new_state.state;
   }
-
-  if (WATCHED().includes(entity_id)) {
-    renderOverview();
-  }
+  if (WATCHED().includes(entity_id)) renderOverview();
 }
 
 // ─────────────────────────────────────────────
@@ -1211,9 +1402,24 @@ async function init() {
   await loadConfig();
 
   if (!cfg.p1_power_sensor) {
-    showError('Integratie nog niet geconfigureerd. Ga naar Instellingen → Integraties → SolarCharge → Configureren.');
+    showError(t('err_no_cfg'));
     return;
   }
+
+  // Update tab labels now that lang is set
+  updateTabLabels();
+
+  // Watch parent HA document for theme changes (same-origin iframe)
+  try {
+    const obs = new MutationObserver(() => {
+      if (!localStorage.getItem('solar_charger_theme')) {
+        applyTheme();
+        if (chart1) renderChart1();
+        if (chart2) renderChart2(_lastChart2Sessions);
+      }
+    });
+    obs.observe(window.parent.document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+  } catch(e) {}
 
   ha.onReady = async () => {
     const allStates = await ha.getStates();

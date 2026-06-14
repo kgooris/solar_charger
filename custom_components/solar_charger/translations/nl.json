@@ -3,7 +3,7 @@
     "step": {
       "p1_sensor": {
         "title": "P1 meter — netstroom",
-        "description": "Selecteer de sensor van je HomeWizard P1 meter die het actieve vermogen meet. **Negatief = teruglevering aan het net (overschot), positief = afname van het net.**",
+        "description": "Selecteer de sensor van je HomeWizard P1 meter of andere, die het actieve vermogen meet. **Negatief = teruglevering aan het net (overschot), positief = afname van het net.**",
         "data": {
           "p1_power_sensor": "Actief vermogen sensor (W)"
         },
@@ -13,14 +13,14 @@
       },
       "solar_sensor": {
         "title": "Zonnepanelen — omvormer",
-        "description": "Selecteer de vermogen-sensor van je SonnyBoy omvormer (altijd positief overdag, 0 's nachts).",
+        "description": "Selecteer de vermogen-sensor van je Zonnepaneel omvormer (altijd positief overdag, 0 's nachts).",
         "data": {
           "solar_power_sensor": "Huidig vermogen zonnepanelen (W)"
         }
       },
       "charger_sensors": {
         "title": "Lader — MQTT schakelaar",
-        "description": "Selecteer de schakelaar en de ingebouwde energiemeter van je laadpaal.",
+        "description": "Selecteer de schakelaar en de ingebouwde energiemeter van je batterij lader.",
         "data": {
           "charger_switch": "Lader schakelaar (switch.*)",
           "charger_power_sensor": "Huidig verbruik lader (W)",
@@ -44,7 +44,7 @@
           "min_surplus_w": "Aanbevolen: 300–800W. Lager = eerder starten maar mogelijk iets van net afnemen bij wolken.",
           "delay_on_seconds": "Hoe lang het overschot stabiel aanwezig moet zijn voor we inschakelen",
           "delay_off_seconds": "Hoe lang het tekort aanwezig moet zijn voor we uitschakelen",
-          "efficiency_percent": "Verlies tussen stopcontact en accu van de auto (typisch 88–92%)"
+          "efficiency_percent": "Verlies tussen stopcontact en batterij (typisch 88–92%)"
         }
       }
     },
