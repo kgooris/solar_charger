@@ -1,6 +1,6 @@
 # SolarCharge
 
-🇬🇧 [English](#english) &nbsp;|&nbsp; 🇧🇪 [Nederlands](#nederlands)
+🇬🇧 [English](https://github.com/kgooris/solar_charger#english) &nbsp;|&nbsp; 🇧🇪 [Nederlands](https://github.com/kgooris/solar_charger#nederlands)
 
 ---
 

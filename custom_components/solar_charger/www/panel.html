@@ -86,14 +86,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .meters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
 @media(max-width:640px){.meters{grid-template-columns:repeat(2,1fr)}}
 .meter{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;border-top:3px solid transparent}
-.m-solar{border-top-color:#f59e0b}.m-house{border-top-color:#3b82f6}
-.m-car{border-top-color:#16a34a}.m-grid{border-top-color:#7c3aed}
+.m-solar{border-top-color:#fbbf24}.m-house{border-top-color:#3b82f6}
+.m-car{border-top-color:#16a34a}.m-grid{border-top-color:#f59e0b}
 .m-lbl{font-size:10px;color:var(--text3);margin-bottom:5px}
 .m-val{font-size:17px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
 .m-unit{font-size:11px;font-weight:400;color:var(--text4)}
 .m-sub{font-size:10px;color:var(--text4);margin-top:3px}
-.m-solar .m-val{color:#b45309}.m-house .m-val{color:var(--blue-val)}
-.m-car .m-val{color:var(--green-val)}.m-grid .m-val{color:#6d28d9}
+.m-solar .m-val{color:#fbbf24}.m-house .m-val{color:var(--blue-val)}
+.m-car .m-val{color:var(--green-val)}.m-grid .m-val{color:#f59e0b}
 
 /* sessie banner */
 .session-card{background:var(--card);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--border)}
@@ -184,8 +184,8 @@ input[type=date]{padding:3px 7px;font-size:11px;border:1px solid var(--border);b
 /* info tooltip */
 .info-btn{width:16px;height:16px;border-radius:50%;background:var(--cyan-bg);border:none;color:var(--cyan-val);font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
 .info-btn:hover .tooltip{display:block}
-.tooltip{display:none;position:absolute;bottom:calc(100% + 6px);right:0;width:240px;background:var(--tooltip-bg);color:var(--tooltip-text);font-size:11px;line-height:1.6;padding:9px 11px;border-radius:8px;z-index:20;pointer-events:none;text-align:left;font-weight:400}
-.tooltip::after{content:'';position:absolute;top:100%;right:6px;border:5px solid transparent;border-top-color:var(--tooltip-bg)}
+.tooltip{display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);bottom:auto;right:auto;width:250px;background:var(--tooltip-bg);color:var(--tooltip-text);font-size:11px;line-height:1.6;padding:9px 11px;border-radius:8px;z-index:9999;pointer-events:none;text-align:left;font-weight:400}
+.tooltip::after{content:'';position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:var(--tooltip-bg)}
 
 /* sensoren */
 .sens-title{font-size:10px;font-weight:600;color:var(--text4);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
@@ -231,7 +231,7 @@ const STRINGS = {
     meter_battery:'🔋 Batterij laden', meter_battery_on:'actief', meter_battery_off:'niet actief',
     meter_grid:'📡 Teruglevering', meter_grid_sub:'naar het net',
     chart1_title:'Afname / teruglevering net',
-    chart1_sub:'Blauw = afname van net · Geel = teruglevering naar net · Groen = batterij laden (rechts)',
+    chart1_sub:'Blauw = afname van net · Geel = teruglevering naar net · Groen = batterij laden',
     chart1_leg_p1:'Afname (blauw) / Teruglevering (geel)',
     chart1_leg_bat:'Batterij laden', chart1_leg_thr:'Drempel',
     chart1_1h:'1u', chart1_today:'Vandaag', chart1_7d:'7 dagen', chart1_or:'of:',
@@ -296,7 +296,7 @@ const STRINGS = {
     meter_battery:'🔋 Battery charging', meter_battery_on:'active', meter_battery_off:'inactive',
     meter_grid:'📡 Grid return', meter_grid_sub:'to the grid',
     chart1_title:'Grid import / export',
-    chart1_sub:'Blue = grid import · Yellow = grid export · Green = battery charging (right)',
+    chart1_sub:'Blue = grid import · Yellow = grid export · Green = battery charging',
     chart1_leg_p1:'Import (blue) / Export (yellow)',
     chart1_leg_bat:'Battery charging', chart1_leg_thr:'Threshold',
     chart1_1h:'1h', chart1_today:'Today', chart1_7d:'7 days', chart1_or:'or:',
@@ -453,6 +453,13 @@ class HAConnection {
   }
 
   getToken() {
+    // Primary: read from parent HA frame — works in Companion app and browser
+    try {
+      const haEl = window.parent.document.querySelector('home-assistant');
+      const token = haEl?.hass?.auth?.data?.access_token;
+      if (token) return token;
+    } catch(e) {}
+    // Fallback: localStorage — works when panel is opened standalone in browser
     try {
       const raw = localStorage.getItem('hassTokens');
       if (!raw) { console.error('[SCC] hassTokens missing'); return null; }
@@ -972,8 +979,9 @@ async function renderChart1() {
         {
           label: t('chart1_leg_bat'),
           data: carD,
-          borderColor: '#16a34a',
-          fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2,
+          borderColor: 'rgba(22,163,74,0.45)',
+          backgroundColor: 'rgba(22,163,74,0.07)',
+          fill: 'origin', tension: 0.3, pointRadius: 0, borderWidth: 1.5,
           spanGaps: true, yAxisID: 'yright',
         },
         {
@@ -1034,8 +1042,8 @@ async function renderChart1() {
         yright: {
           position: 'right', min: 0,
           grid: { display: false },
-          ticks: { color: '#16a34a', font: { size: 10 }, callback: v => v > 0 ? `${Math.round(v)}W` : '' },
-          title: { display: true, text: t('chart1_yright'), color: '#16a34a', font: { size: 10 } },
+          ticks: { color: 'rgba(22,163,74,0.6)', font: { size: 10 }, callback: v => v > 0 ? `${Math.round(v)}W` : '' },
+          title: { display: true, text: t('chart1_yright'), color: 'rgba(22,163,74,0.6)', font: { size: 10 } },
         },
       },
     },
@@ -1359,7 +1367,7 @@ async function saveSetting(key) {
     noplug_threshold_w:  'number.solar_charger_noplug_threshold',
   };
   const entityId = entityMap[key];
-  if (entityId && states[entityId] !== undefined) {
+  if (entityId) {
     await ha.callService('number', 'set_value', { entity_id: entityId, value: val });
   }
   btn.textContent = t('set_saved');
