@@ -777,7 +777,8 @@ async function updateOverviewDynamic() {
   const allSessions = await getSessions();
   const v = computeValues();
   const chargerOn = getState(cfg.charger_switch).state === 'on';
-  const startIso = getState('text.solar_charger_session_start').state;
+  const startIsoRaw = getState('text.solar_charger_session_start').state;
+  const startIso = (startIsoRaw && !isNaN(new Date(startIsoRaw))) ? startIsoRaw : null;
   const energyToday = getFloat('number.solar_charger_energy_today', 0);
   const energyBatt  = getFloat('number.solar_charger_energy_in_battery_today', 0);
   const energyTotal = getFloat('number.solar_charger_energy_total', 0);
@@ -805,7 +806,7 @@ async function updateOverviewDynamic() {
   if (pillWrap) pillWrap.innerHTML = pillHtml;
 
   let sessionKwh = 0;
-  if (chargerOn && startIso && startIso !== '' && startIso !== 'unknown') {
+  if (chargerOn && startIso) {
     const hours = (Date.now() - new Date(startIso).getTime()) / 3600000;
     const powerKw = cfg.charger_power_sensor
       ? getFloat(cfg.charger_power_sensor, 0) / 1000
@@ -814,8 +815,8 @@ async function updateOverviewDynamic() {
   }
 
   let bannerHtml = '';
-  if (chargerOn && startIso && startIso !== '' && startIso !== 'unknown') {
-    const mins = minsSince(startIso);
+  if (chargerOn) {
+    const mins = startIso ? minsSince(startIso) : null;
     const startSurplus = activeSession ? activeSession.startSurplus : '—';
     const cls = noplug ? 'noplug' : 'active';
     const dotCls = noplug ? 'dot-orange' : 'dot-green';
@@ -827,7 +828,7 @@ async function updateOverviewDynamic() {
           <div class="session-title">${title}</div>
           <div class="session-meta">
             <span>${t('sess_started')} ${fmtTime(startIso)}</span>
-            <span>⌛ ${fmtDur(mins)} ${t('sess_ago_suffix')}</span>
+            ${mins !== null ? `<span>⌛ ${fmtDur(mins)} ${t('sess_ago_suffix')}</span>` : ''}
             ${startSurplus !== '—' ? `<span>${t('sess_surplus')} ${startSurplus} W</span>` : ''}
           </div>
         </div>

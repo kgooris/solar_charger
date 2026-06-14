@@ -5,7 +5,7 @@
         "title": "P1 meter — netstroom",
         "description": "Selecteer de sensor van je HomeWizard P1 meter of andere, die het actieve vermogen meet. **Negatief = teruglevering aan het net (overschot), positief = afname van het net.**",
         "data": {
-          "p1_power_sensor": "Actief vermogen sensor (W)"
+          "p1_power_sensor": "Actief totaal vermogen sensor (W)"
         },
         "data_description": {
           "p1_power_sensor": "Typisch: sensor.homewizard_p1_active_power_w — negatief bij teruglevering"
