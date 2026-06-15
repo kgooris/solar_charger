@@ -349,7 +349,7 @@ def _setup_automation_logic(
         _timers["off"] = None
         if not _automation_active():
             return
-        if _p1_watts() <= -_live_min_surplus():
+        if _p1_watts() - _charger_watts() <= -_live_min_surplus():
             _LOGGER.debug("SolarCharge: turn-off timer verlopen maar overschot hersteld")
             return
         if _charger_state() == "off":
@@ -444,9 +444,11 @@ def _setup_automation_logic(
 
         p1 = _p1_watts()
         charger_on = _charger_state() == "on"
+        # Trek laadvermogen af zodat de eigen consumptie van de lader geen turn-off triggert
+        p1_adj = p1 - _charger_watts()
 
         cur_min_surplus = _live_min_surplus()
-        if p1 <= -cur_min_surplus:
+        if p1_adj <= -cur_min_surplus:
             # Voldoende overschot
             if _timers["off"]:
                 _timers["off"]()
@@ -455,7 +457,7 @@ def _setup_automation_logic(
             if not charger_on and _timers["on"] is None:
                 cur_delay_on = _live_delay_on()
                 _timers["on"] = async_call_later(hass, cur_delay_on, _do_turn_on)
-                _LOGGER.debug("SolarCharge: turn-on gepland over %s s (overschot %s W)", cur_delay_on, round(-p1))
+                _LOGGER.debug("SolarCharge: turn-on gepland over %s s (overschot %s W)", cur_delay_on, round(-p1_adj))
         else:
             # Onvoldoende overschot
             if _timers["on"]:

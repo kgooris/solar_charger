@@ -943,6 +943,13 @@ async function renderChart1() {
     p1D.forEach(() => carD.push(null));
   }
 
+  // Pas P1 aan: trek laadvermogen af zodat de lijn "huisverbruik excl lading" toont
+  if (cfg.charger_power_sensor) {
+    for (let i = 0; i < p1D.length; i++) {
+      if (carD[i] !== null) p1D[i] -= carD[i];
+    }
+  }
+
   // Build step-function threshold from historical min_surplus values
   const thrD = [];
   if (thrHistory.length > 0) {

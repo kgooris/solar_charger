@@ -175,16 +175,17 @@ All entities are created automatically as native integration entities when the i
 The integration does not create HA automations in `automations.yaml`. Instead, it runs the logic directly in Python using Home Assistant's event system:
 
 1. It subscribes to state-change events on your P1 sensor.
-2. When the P1 value drops to or below `-min_surplus` (export ≥ threshold) and the charger is off:
+2. On each P1 update, the charger's own power consumption is **subtracted** from the P1 reading. This gives the true solar surplus available to the house, excluding the charger itself — preventing the charger's own load from making it look like the surplus has disappeared.
+3. When the adjusted P1 value drops to or below `-min_surplus` (export ≥ threshold) and the charger is off:
    - A timer is started for `delay_on` seconds.
    - If the surplus remains sufficient until the timer fires, the charger is turned on.
    - If the surplus disappears before the timer fires, the timer is cancelled.
-3. When the P1 value rises above `-min_surplus` (surplus drops) and the charger is on:
+4. When the adjusted P1 value rises above `-min_surplus` (surplus drops) and the charger is on:
    - A timer is started for `delay_off` seconds.
    - If the surplus has not returned when the timer fires, the charger is turned off.
    - If the surplus returns before the timer fires, the timer is cancelled.
-4. At midnight, `energy_today` and `energy_in_battery_today` are reset to 0.
-5. When the charger turns off, the integration calculates the session duration and energy and writes the totals to the helper entities.
+5. At midnight, `energy_today` and `energy_in_battery_today` are reset to 0.
+6. When the charger turns off, the integration calculates the session duration and energy and writes the totals to the helper entities.
 
 All timers and subscriptions are properly cancelled when the integration is unloaded or reconfigured.
 
@@ -399,16 +400,17 @@ Alle entities worden automatisch aangemaakt als native integratie-entities bij d
 De integratie maakt geen automatiseringen aan in `automations.yaml`. De logica draait rechtstreeks in Python via het HA event-systeem:
 
 1. Ze abonneert zich op toestandswijzigingen van je P1-sensor.
-2. Wanneer de P1-waarde daalt naar of onder `-min_surplus` (export ≥ drempel) en de lader uitstaat:
+2. Bij elke P1-update wordt het eigen laadvermogen van de batterijlader **afgetrokken** van de P1-waarde. Dit geeft het echte zonne-overschot exclusief de lader zelf — waardoor de lader zijn eigen consumptie niet laat lijken alsof het overschot weggevallen is.
+3. Wanneer de gecorrigeerde P1-waarde daalt naar of onder `-min_surplus` (export ≥ drempel) en de lader uitstaat:
    - Een timer van `delay_on` seconden wordt gestart.
    - Als het overschot blijft tot de timer afloopt, wordt de lader ingeschakeld.
    - Verdwijnt het overschot voor de timer afloopt, dan wordt de timer geannuleerd.
-3. Wanneer de P1-waarde stijgt boven `-min_surplus` (overschot valt weg) en de lader aanstaat:
+4. Wanneer de gecorrigeerde P1-waarde stijgt boven `-min_surplus` (overschot valt weg) en de lader aanstaat:
    - Een timer van `delay_off` seconden wordt gestart.
    - Als het overschot niet terugkeert voor de timer afloopt, wordt de lader uitgeschakeld.
    - Keert het overschot terug voor de timer afloopt, dan wordt de timer geannuleerd.
-4. Om middernacht worden `energy_today` en `energy_in_battery_today` gereset naar 0.
-5. Wanneer de lader uitschakelt, berekent de integratie de sessieduur en energie en schrijft de totalen naar de helper-entities.
+5. Om middernacht worden `energy_today` en `energy_in_battery_today` gereset naar 0.
+6. Wanneer de lader uitschakelt, berekent de integratie de sessieduur en energie en schrijft de totalen naar de helper-entities.
 
 Alle timers en abonnementen worden netjes geannuleerd wanneer de integratie wordt verwijderd of hergeladen.
 
