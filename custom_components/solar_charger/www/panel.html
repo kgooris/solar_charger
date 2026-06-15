@@ -236,7 +236,7 @@ const STRINGS = {
     chart1_leg_bat:'Batterij laden', chart1_leg_thr:'Drempel',
     chart1_1h:'1u', chart1_today:'Vandaag', chart1_7d:'7 dagen', chart1_or:'of:',
     chart1_apply:'Pas toe',
-    chart1_hint:'💡 Scroll om in/uit te zoomen · sleep om te pannen · dubbelklik om te resetten',
+    chart1_hint:'💡 Ctrl + scroll om in/uit te zoomen · sleep om te pannen · dubbelklik om te resetten',
     chart1_yaxis:'↑ afname  |  teruglevering ↓', chart1_yright:'Lading (W)',
     tip_take:'Afname net', tip_return:'Teruglevering', tip_battery:'Batterij laden', tip_threshold:'Drempel',
     stat_today:'Vandaag geladen', stat_battery:'In accu (~{eff}%)', stat_sessions:'Sessies vandaag', stat_total:'Totaal ooit',
@@ -258,7 +258,7 @@ const STRINGS = {
     chart2_title:'Geladen energie per sessie',
     chart2_sub:'kWh gemeten aan de schakelaar · oranje = batterij niet aangesloten',
     chart2_ok:'Geladen (kWh)', chart2_noplug:'Niet ingeplugd',
-    chart2_hint:'💡 Sleep om te pannen · scroll om in/uit te zoomen · dubbelklik om te resetten',
+    chart2_hint:'💡 Sleep om te pannen · Ctrl + scroll om in/uit te zoomen · dubbelklik om te resetten',
     log_all:'📋 Alle laadsessies',
     log_filter:'Filter:', log_search:'Zoeken', log_reset:'Reset',
     log_apply:'Pas toe',
@@ -301,7 +301,7 @@ const STRINGS = {
     chart1_leg_bat:'Battery charging', chart1_leg_thr:'Threshold',
     chart1_1h:'1h', chart1_today:'Today', chart1_7d:'7 days', chart1_or:'or:',
     chart1_apply:'Apply',
-    chart1_hint:'💡 Scroll to zoom · drag to pan · double-click to reset',
+    chart1_hint:'💡 Ctrl + scroll to zoom · drag to pan · double-click to reset',
     chart1_yaxis:'↑ import  |  export ↓', chart1_yright:'Charging (W)',
     tip_take:'Grid import', tip_return:'Grid export', tip_battery:'Battery charging', tip_threshold:'Threshold',
     stat_today:'Charged today', stat_battery:'In battery (~{eff}%)', stat_sessions:'Sessions today', stat_total:'Total all time',
@@ -323,7 +323,7 @@ const STRINGS = {
     chart2_title:'Charged energy per session',
     chart2_sub:'kWh measured at the switch · orange = charger not connected',
     chart2_ok:'Charged (kWh)', chart2_noplug:'Not connected',
-    chart2_hint:'💡 Drag to pan · scroll to zoom · double-click to reset',
+    chart2_hint:'💡 Drag to pan · Ctrl + scroll to zoom · double-click to reset',
     log_all:'📋 All charging sessions',
     log_filter:'Filter:', log_search:'Search', log_reset:'Reset',
     log_apply:'Apply',
@@ -438,9 +438,13 @@ let cfg = {};
 
 async function loadConfig() {
   try {
-    const r = await fetch('/local/solar_charger/config.json');
+    const r = await fetch('/local/solar_charger/config.json', { cache: 'no-store' });
     if (r.ok) cfg = await r.json();
   } catch(e) {}
+}
+
+function eid(uid, fallbackDomain) {
+  return cfg.entity_ids?.[uid] || `${fallbackDomain}.${uid}`;
 }
 
 // ─────────────────────────────────────────────
@@ -545,7 +549,7 @@ const ha = new HAConnection();
 let states = {};
 let chart1 = null;
 let chart2 = null;
-let chart1Range = 'today';
+let chart1Range = window.innerWidth < 640 ? '1h' : 'today';
 let chart1StartIso = null;
 let chart1EndIso = null;
 let prevSwitchState = null;
@@ -630,7 +634,7 @@ async function onSwitchChange(newState, oldState) {
     activeSession = {
       startIso: new Date().toISOString(),
       startSurplus: Math.round(-v.p1Raw),
-      manual: getState('switch.solar_charger_automation_enabled').state === 'off',
+      manual: getState(eid('solar_charger_automation_enabled', 'switch')).state === 'off',
     };
   }
 
@@ -784,11 +788,11 @@ async function updateOverviewDynamic() {
   const allSessions = await getSessions();
   const v = computeValues();
   const chargerOn = getState(cfg.charger_switch).state === 'on';
-  const startIsoRaw = getState('text.solar_charger_session_start').state;
+  const startIsoRaw = getState(eid('solar_charger_session_start', 'text')).state;
   const startIso = (startIsoRaw && !isNaN(new Date(startIsoRaw))) ? startIsoRaw : null;
-  const energyToday = getFloat('number.solar_charger_energy_today', 0);
-  const energyBatt  = getFloat('number.solar_charger_energy_in_battery_today', 0);
-  const energyTotal = getFloat('number.solar_charger_energy_total', 0);
+  const energyToday = getFloat(eid('solar_charger_energy_today', 'number'), 0);
+  const energyBatt  = getFloat(eid('solar_charger_energy_in_battery_today', 'number'), 0);
+  const energyTotal = getFloat(eid('solar_charger_energy_total', 'number'), 0);
 
   const mvSolar  = document.getElementById('mv-solar');
   const mvHouse  = document.getElementById('mv-house');
@@ -802,7 +806,7 @@ async function updateOverviewDynamic() {
   if (mvCarSub) mvCarSub.textContent = chargerOn ? t('meter_battery_on') : t('meter_battery_off');
 
   const noplug = chargerOn && v.carW < (cfg.noplug_threshold_w || 50);
-  const autoOn = getState('switch.solar_charger_automation_enabled').state === 'on';
+  const autoOn = getState(eid('solar_charger_automation_enabled', 'switch')).state === 'on';
   let pillHtml = '';
   if (noplug)        pillHtml = `<span class="pill pill-noplug">${t('pill_noplug')}</span>`;
   else if (chargerOn) pillHtml = `<span class="pill pill-on">${t('pill_charging')}</span>`;
@@ -934,13 +938,36 @@ async function renderChart1() {
     p1D.forEach(() => carD.push(null));
   }
 
+  // Downsample for performance: keep at most 800 points before charting
+  if (labels.length > 800) {
+    const step = labels.length / 800;
+    const pick = i => Math.round(i * step);
+    const sl = (a) => Array.from({ length: 800 }, (_, i) => a[pick(i)]);
+    labels.splice(0, labels.length, ...sl(labels));
+    p1D.splice(0, p1D.length, ...sl(p1D));
+    carD.splice(0, carD.length, ...sl(carD));
+  }
+
   const canvas = document.getElementById('chart1');
   if (!canvas) return;
   if (chart1) { chart1.destroy(); chart1 = null; }
 
-  const threshold = -(cfg.min_surplus_w || 500);
+  const threshold = -(cfg.min_surplus_w || getFloat(eid('solar_charger_min_surplus', 'number'), 500));
+
+  // Plugin: synchronise right axis range with left axis so 100 W aligns on both sides
+  const rightAxisSyncPlugin = {
+    id: 'rightAxisSync',
+    afterDataLimits(chart, args) {
+      if (args.scale.id !== 'yright') return;
+      const y = chart.scales.y;
+      if (!y) return;
+      args.scale.min = y.min;
+      args.scale.max = y.max;
+    },
+  };
 
   chart1 = new Chart(canvas, {
+    plugins: [rightAxisSyncPlugin],
     type: 'line',
     data: {
       labels,
@@ -1019,7 +1046,7 @@ async function renderChart1() {
         },
         zoom: {
           pan: { enabled: true, mode: 'x' },
-          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+          zoom: { wheel: { enabled: true, modifierKey: 'ctrl' }, pinch: { enabled: true }, mode: 'x' },
         },
       },
       scales: {
@@ -1040,7 +1067,7 @@ async function renderChart1() {
           title: { display: true, text: t('chart1_yaxis'), color: axisColor(), font: { size: 10 } },
         },
         yright: {
-          position: 'right', min: 0,
+          position: 'right',
           grid: { display: false },
           ticks: { color: 'rgba(22,163,74,0.6)', font: { size: 10 }, callback: v => v > 0 ? `${Math.round(v)}W` : '' },
           title: { display: true, text: t('chart1_yright'), color: 'rgba(22,163,74,0.6)', font: { size: 10 } },
@@ -1054,8 +1081,19 @@ function setChart1Range(range, btn) {
   chart1Range = range;
   chart1StartIso = null;
   chart1EndIso = null;
-  const fromEl = document.getElementById('c1-from'); if (fromEl) fromEl.value = '';
-  const toEl   = document.getElementById('c1-to');   if (toEl)   toEl.value = '';
+  const today  = new Date().toISOString().slice(0, 10);
+  const fromEl = document.getElementById('c1-from');
+  const toEl   = document.getElementById('c1-to');
+  if (fromEl && toEl) {
+    if (range === 'today' || range === '1h') {
+      fromEl.value = today; toEl.value = today;
+    } else if (range === '7d') {
+      const d = new Date(); d.setDate(d.getDate() - 7);
+      fromEl.value = d.toISOString().slice(0, 10); toEl.value = today;
+    } else {
+      fromEl.value = ''; toEl.value = '';
+    }
+  }
   document.querySelectorAll('#tab-overview .rbtn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   renderChart1();
@@ -1237,7 +1275,7 @@ function renderChart2(sessions) {
         },
         zoom: {
           pan: { enabled: true, mode: 'x' },
-          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+          zoom: { wheel: { enabled: true, modifierKey: 'ctrl' }, pinch: { enabled: true }, mode: 'x' },
         },
       },
       scales: {
@@ -1259,14 +1297,14 @@ async function setChart2Range(days, btn) {
 // UI — INSTELLINGEN TAB
 // ─────────────────────────────────────────────
 function renderSettings() {
-  const autoEnabled = getState('switch.solar_charger_automation_enabled').state === 'on';
+  const autoEnabled = getState(eid('solar_charger_automation_enabled', 'switch')).state === 'on';
 
   // Read live values from HA number entities; fall back to cfg defaults
-  const minSurplus   = getFloat('number.solar_charger_min_surplus',      cfg.min_surplus_w     || 500);
-  const delayOn      = getFloat('number.solar_charger_delay_on',          cfg.delay_on_seconds  || 120);
-  const delayOff     = getFloat('number.solar_charger_delay_off',         cfg.delay_off_seconds || 180);
-  const efficiencyV  = getFloat('number.solar_charger_efficiency',        cfg.efficiency_percent || 90);
-  const noplugThresh = getFloat('number.solar_charger_noplug_threshold',  cfg.noplug_threshold_w || 50);
+  const minSurplus   = getFloat(eid('solar_charger_min_surplus',      'number'), cfg.min_surplus_w     || 500);
+  const delayOn      = getFloat(eid('solar_charger_delay_on',          'number'), cfg.delay_on_seconds  || 120);
+  const delayOff     = getFloat(eid('solar_charger_delay_off',         'number'), cfg.delay_off_seconds || 180);
+  const efficiencyV  = getFloat(eid('solar_charger_efficiency',        'number'), cfg.efficiency_percent || 90);
+  const noplugThresh = getFloat(eid('solar_charger_noplug_threshold',  'number'), cfg.noplug_threshold_w || 50);
 
   const sensors = [
     [t('sens_p1'),     cfg.p1_power_sensor],
@@ -1278,7 +1316,7 @@ function renderSettings() {
   document.getElementById('tab-settings').innerHTML = `
     <div class="settings-card">
       <div class="settings-title">${t('set_automation')}</div>
-      ${settingToggle(t('set_auto_toggle'), 'switch.solar_charger_automation_enabled', autoEnabled)}
+      ${settingToggle(t('set_auto_toggle'), eid('solar_charger_automation_enabled', 'switch'), autoEnabled)}
       ${settingNumber(t('set_min_surplus'), 'min_surplus_w', minSurplus, 'W', 0, 5000, 50)}
       ${settingNumber(t('set_delay_on'), 'delay_on_seconds', delayOn, 's', 30, 600, 30)}
       ${settingNumber(t('set_delay_off'), 'delay_off_seconds', delayOff, 's', 30, 600, 30)}
@@ -1360,11 +1398,11 @@ async function saveSetting(key) {
   const val = parseFloat(input.value);
   cfg[key] = val;
   const entityMap = {
-    min_surplus_w:       'number.solar_charger_min_surplus',
-    delay_on_seconds:    'number.solar_charger_delay_on',
-    delay_off_seconds:   'number.solar_charger_delay_off',
-    efficiency_percent:  'number.solar_charger_efficiency',
-    noplug_threshold_w:  'number.solar_charger_noplug_threshold',
+    min_surplus_w:       eid('solar_charger_min_surplus',      'number'),
+    delay_on_seconds:    eid('solar_charger_delay_on',          'number'),
+    delay_off_seconds:   eid('solar_charger_delay_off',         'number'),
+    efficiency_percent:  eid('solar_charger_efficiency',        'number'),
+    noplug_threshold_w:  eid('solar_charger_noplug_threshold',  'number'),
   };
   const entityId = entityMap[key];
   if (entityId) {
@@ -1403,11 +1441,11 @@ function showError(msg) {
 const WATCHED = () => [
   cfg.p1_power_sensor, cfg.solar_power_sensor,
   cfg.charger_switch, cfg.charger_power_sensor,
-  'number.solar_charger_energy_today',
-  'number.solar_charger_energy_in_battery_today',
-  'number.solar_charger_energy_total',
-  'text.solar_charger_session_start',
-  'switch.solar_charger_automation_enabled',
+  eid('solar_charger_energy_today',            'number'),
+  eid('solar_charger_energy_in_battery_today', 'number'),
+  eid('solar_charger_energy_total',            'number'),
+  eid('solar_charger_session_start',           'text'),
+  eid('solar_charger_automation_enabled',      'switch'),
 ].filter(Boolean);
 
 function onStateChange(event) {

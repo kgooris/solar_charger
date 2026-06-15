@@ -49,13 +49,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN]["config"] = cfg
     hass.data[DOMAIN]["entry_id"] = entry.entry_id
 
-    await hass.async_add_executor_job(_write_config_json, hass, cfg)
     _register_websocket_commands(hass)
     await _register_panel(hass)
     await hass.config_entries.async_forward_entry_setups(entry, ["switch", "number", "text"])
 
     unsubs = _setup_automation_logic(hass, cfg, entry)
     hass.data[DOMAIN]["unsubs"] = unsubs
+
+    # Schrijf config.json NADAT entities geregistreerd zijn zodat entity_ids bekend zijn
+    await _async_write_config_with_ids(hass, cfg, entry)
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
@@ -125,6 +127,41 @@ def _write_config_json(hass: HomeAssistant, cfg: dict) -> None:
     if src.exists() and (not dst.exists() or src.read_bytes() != dst.read_bytes()):
         shutil.copy2(src, dst)
         _LOGGER.info("panel.html gekopieerd naar %s", dst)
+
+
+async def _async_write_config_with_ids(
+    hass: HomeAssistant, cfg: dict, entry: ConfigEntry
+) -> None:
+    """Schrijf config.json inclusief de werkelijke entity-IDs uit het HA-register.
+
+    De panel.html gebruikt deze IDs zodat het altijd de juiste entiteiten
+    aanspreekt, ook na herinstallatie waarbij HA andere IDs kan toewijzen.
+    """
+    from homeassistant.helpers import entity_registry as er
+
+    registry = er.async_get(hass)
+    entity_ids: dict[str, str] = {}
+    for domain, uid in [
+        ("number", "solar_charger_min_surplus"),
+        ("number", "solar_charger_delay_on"),
+        ("number", "solar_charger_delay_off"),
+        ("number", "solar_charger_efficiency"),
+        ("number", "solar_charger_noplug_threshold"),
+        ("number", "solar_charger_energy_today"),
+        ("number", "solar_charger_energy_in_battery_today"),
+        ("number", "solar_charger_energy_total"),
+        ("number", "solar_charger_session_duration_minutes"),
+        ("switch", "solar_charger_automation_enabled"),
+        ("text",   "solar_charger_session_start"),
+        ("text",   "solar_charger_session_stop"),
+    ]:
+        eid = registry.async_get_entity_id(domain, DOMAIN, uid)
+        if eid:
+            entity_ids[uid] = eid
+    _LOGGER.debug("SolarCharge: entity_ids gevonden: %s", entity_ids)
+    await hass.async_add_executor_job(
+        _write_config_json, hass, {**cfg, "entity_ids": entity_ids}
+    )
 
 
 # ── WEBSOCKET COMMANDS ────────────────────────────────────────────────────────
