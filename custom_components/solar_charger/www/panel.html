@@ -639,26 +639,27 @@ async function onSwitchChange(newState, oldState) {
   }
 
   if (!chargerOn && wasOn && activeSession) {
-    const stopIso = new Date().toISOString();
-    const durMins = Math.round((new Date(stopIso) - new Date(activeSession.startIso)) / 60000);
-    const eff = (cfg.efficiency_percent || 90) / 100;
-    const chargerKwh = cfg.charger_power_sensor
-      ? (getFloat(cfg.charger_power_sensor, 0) / 1000 * durMins / 60)
-      : ((cfg.max_charge_kw || 2.3) * durMins / 60);
-    const noplugThreshold = cfg.noplug_threshold_w || 50;
-    const avgPower = cfg.charger_power_sensor ? getFloat(cfg.charger_power_sensor, 0) : 2300;
-    const noplug = avgPower < noplugThreshold;
-
-    const sessions = await getSessions();
-    sessions.unshift({
-      startIso: activeSession.startIso, stopIso, durMins,
-      kwhMuur: parseFloat(chargerKwh.toFixed(3)),
-      kwhAccu: parseFloat((chargerKwh * eff).toFixed(3)),
-      startSurplus: activeSession.startSurplus,
-      status: activeSession.manual ? 'manual' : noplug ? 'noplug' : 'ok',
-    });
-    if (sessions.length > 200) sessions.splice(200);
-    await saveSessionToHA(sessions[0]);
+    if (activeSession.manual) {
+      // Manuele sessie: backend slaat niet op (automation was uit), dus frontend doet het
+      const stopIso = new Date().toISOString();
+      const durMins = Math.round((new Date(stopIso) - new Date(activeSession.startIso)) / 60000);
+      const eff = getFloat(eid('solar_charger_efficiency', 'number'), cfg.efficiency_percent || 90) / 100;
+      const chargerKwh = cfg.charger_power_sensor
+        ? (getFloat(cfg.charger_power_sensor, 0) / 1000 * durMins / 60)
+        : ((cfg.max_charge_kw || 2.3) * durMins / 60);
+      const noplugThreshold = getFloat(eid('solar_charger_noplug_threshold', 'number'), cfg.noplug_threshold_w || 50);
+      const avgPower = cfg.charger_power_sensor ? getFloat(cfg.charger_power_sensor, 0) : 2300;
+      const noplug = avgPower < noplugThreshold;
+      await saveSessionToHA({
+        startIso: activeSession.startIso, stopIso, durMins,
+        kwhMuur: parseFloat(chargerKwh.toFixed(3)),
+        kwhAccu: parseFloat((chargerKwh * eff).toFixed(3)),
+        startSurplus: activeSession.startSurplus,
+        status: noplug ? 'noplug' : 'manual',
+      });
+    }
+    // Geautomatiseerde sessies worden door de backend opgeslagen
+    _sessionsCache = null;
     refreshOverviewLog();
     activeSession = null;
   }
@@ -805,13 +806,15 @@ async function updateOverviewDynamic() {
   if (mvGrid)   mvGrid.innerHTML   = `${fmtW(v.gridReturn)}<span class="m-unit"> W</span>`;
   if (mvCarSub) mvCarSub.textContent = chargerOn ? t('meter_battery_on') : t('meter_battery_off');
 
-  const noplug = chargerOn && v.carW < (cfg.noplug_threshold_w || 50);
+  const liveNoplugThr = getFloat(eid('solar_charger_noplug_threshold', 'number'), cfg.noplug_threshold_w || 50);
+  const liveMinSurplus = getFloat(eid('solar_charger_min_surplus', 'number'), cfg.min_surplus_w || 500);
+  const noplug = chargerOn && v.carW < liveNoplugThr;
   const autoOn = getState(eid('solar_charger_automation_enabled', 'switch')).state === 'on';
   let pillHtml = '';
   if (noplug)        pillHtml = `<span class="pill pill-noplug">${t('pill_noplug')}</span>`;
   else if (chargerOn) pillHtml = `<span class="pill pill-on">${t('pill_charging')}</span>`;
   else if (!autoOn)  pillHtml = `<span class="pill pill-off">${t('pill_off')}</span>`;
-  else if (-v.p1Raw >= (cfg.min_surplus_w || 500)) pillHtml = `<span class="pill pill-wait">${t('pill_surplus')}</span>`;
+  else if (-v.p1Raw >= liveMinSurplus) pillHtml = `<span class="pill pill-wait">${t('pill_surplus')}</span>`;
   else               pillHtml = `<span class="pill pill-off">${t('pill_waiting')}</span>`;
   const pillWrap = document.getElementById('ov-pill-wrap');
   if (pillWrap) pillWrap.innerHTML = pillHtml;
@@ -906,7 +909,8 @@ async function renderOverview() {
 // ─────────────────────────────────────────────
 async function renderChart1() {
   const hours = chart1Range === '1h' ? 1 : chart1Range === 'today' ? 24 : 168;
-  const entityIds = [cfg.p1_power_sensor];
+  const surplusId = eid('solar_charger_min_surplus', 'number');
+  const entityIds = [cfg.p1_power_sensor, surplusId];
   if (cfg.charger_power_sensor) entityIds.push(cfg.charger_power_sensor);
 
   const history = chart1StartIso
@@ -915,6 +919,7 @@ async function renderChart1() {
 
   const p1History  = history[cfg.p1_power_sensor] || [];
   const carHistory = cfg.charger_power_sensor ? (history[cfg.charger_power_sensor] || []) : [];
+  const thrHistory = (history[surplusId] || []).filter(p => !isNaN(parseFloat(p.s))).sort((a, b) => a.lu - b.lu);
 
   const locale = _locale();
   const labels = [], p1D = [], carD = [];
@@ -938,6 +943,21 @@ async function renderChart1() {
     p1D.forEach(() => carD.push(null));
   }
 
+  // Build step-function threshold from historical min_surplus values
+  const thrD = [];
+  if (thrHistory.length > 0) {
+    p1History.forEach(p1pt => {
+      let val = null;
+      for (const tp of thrHistory) {
+        if (tp.lu <= p1pt.lu) val = -parseFloat(tp.s);
+      }
+      thrD.push(val);
+    });
+  } else {
+    const fallback = -(cfg.min_surplus_w || getFloat(surplusId, 500));
+    p1History.forEach(() => thrD.push(fallback));
+  }
+
   // Downsample for performance: keep at most 800 points before charting
   if (labels.length > 800) {
     const step = labels.length / 800;
@@ -946,13 +966,12 @@ async function renderChart1() {
     labels.splice(0, labels.length, ...sl(labels));
     p1D.splice(0, p1D.length, ...sl(p1D));
     carD.splice(0, carD.length, ...sl(carD));
+    thrD.splice(0, thrD.length, ...sl(thrD));
   }
 
   const canvas = document.getElementById('chart1');
   if (!canvas) return;
   if (chart1) { chart1.destroy(); chart1 = null; }
-
-  const threshold = -(cfg.min_surplus_w || getFloat(eid('solar_charger_min_surplus', 'number'), 500));
 
   // Plugin: synchronise right axis range with left axis so 100 W aligns on both sides
   const rightAxisSyncPlugin = {
@@ -1013,9 +1032,9 @@ async function renderChart1() {
         },
         {
           label: t('chart1_leg_thr'),
-          data: Array(labels.length).fill(threshold),
+          data: thrD,
           borderColor: '#8b5cf6', borderDash: [5, 4], borderWidth: 1.5,
-          pointRadius: 0, fill: false, yAxisID: 'y',
+          pointRadius: 0, fill: false, yAxisID: 'y', stepped: 'before',
         },
       ],
     },

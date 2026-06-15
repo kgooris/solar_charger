@@ -232,6 +232,24 @@ def _setup_automation_logic(
 
     Retourneert een lijst van unsub-callbacks die op unload gecanceld moeten worden.
     """
+    from homeassistant.helpers import entity_registry as er
+    registry = er.async_get(hass)
+
+    def _eid(uid: str, domain: str, fallback: str) -> str:
+        return registry.async_get_entity_id(domain, DOMAIN, uid) or fallback
+
+    # Resolve actual entity IDs from the registry (robust against reinstall suffix changes)
+    eid_automation  = _eid("solar_charger_automation_enabled",       "switch", AUTOMATION_BOOL)
+    eid_session_start = _eid("solar_charger_session_start",          "text",   SESSION_START)
+    eid_session_stop  = _eid("solar_charger_session_stop",           "text",   SESSION_STOP)
+    eid_energy_today  = _eid("solar_charger_energy_today",           "number", ENERGY_TODAY)
+    eid_energy_batt   = _eid("solar_charger_energy_in_battery_today","number", ENERGY_BATT)
+    eid_energy_total  = _eid("solar_charger_energy_total",           "number", ENERGY_TOTAL)
+    eid_session_mins  = _eid("solar_charger_session_duration_minutes","number", SESSION_MINS)
+    eid_min_surplus   = _eid("solar_charger_min_surplus",            "number", "number.solar_charger_min_surplus")
+    eid_delay_on      = _eid("solar_charger_delay_on",               "number", "number.solar_charger_delay_on")
+    eid_delay_off     = _eid("solar_charger_delay_off",              "number", "number.solar_charger_delay_off")
+
     p1_sensor   = cfg[CONF_P1_POWER]
     switch      = cfg[CONF_CHARGER_SWITCH]
     charger_pwr = cfg.get(CONF_CHARGER_POWER, "")
@@ -242,13 +260,16 @@ def _setup_automation_logic(
     efficiency  = float(cfg.get(CONF_EFFICIENCY, DEFAULT_EFFICIENCY)) / 100
 
     def _live_min_surplus() -> int:
-        return int(_float_state('number.solar_charger_min_surplus') or min_surplus)
+        v = _float_state(eid_min_surplus)
+        return int(v) if v is not None else min_surplus
 
     def _live_delay_on() -> int:
-        return int(_float_state('number.solar_charger_delay_on') or delay_on)
+        v = _float_state(eid_delay_on)
+        return int(v) if v is not None else delay_on
 
     def _live_delay_off() -> int:
-        return int(_float_state('number.solar_charger_delay_off') or delay_off)
+        v = _float_state(eid_delay_off)
+        return int(v) if v is not None else delay_off
 
     # Mutable containers voor pending timer-cancel callbacks
     _timers: dict[str, object] = {"on": None, "off": None}
@@ -256,7 +277,7 @@ def _setup_automation_logic(
     # ── helpers ──────────────────────────────────────────────────────────────
 
     def _automation_active() -> bool:
-        state = hass.states.get(AUTOMATION_BOOL)
+        state = hass.states.get(eid_automation)
         # Als de entity niet bestaat, behandelen we automatisering als actief
         return state is None or state.state == "on"
 
@@ -280,12 +301,14 @@ def _setup_automation_logic(
                 pass
         return max_kw * 1000 if _charger_state() == "on" else 0.0
 
-    def _float_state(entity_id: str) -> float:
+    def _float_state(entity_id: str):
         state = hass.states.get(entity_id)
+        if state is None or state.state in ("unknown", "unavailable"):
+            return None
         try:
             return float(state.state)
-        except (AttributeError, ValueError, TypeError):
-            return 0.0
+        except (ValueError, TypeError):
+            return None
 
     # ── acties ───────────────────────────────────────────────────────────────
 
@@ -303,12 +326,14 @@ def _setup_automation_logic(
         await hass.services.async_call(
             "switch", "turn_on", {"entity_id": switch}, blocking=False
         )
+        start_iso = datetime.now().isoformat()
         await hass.services.async_call(
             "text", "set_value",
-            {"entity_id": SESSION_START, "value": datetime.now().isoformat()},
+            {"entity_id": eid_session_start, "value": start_iso},
             blocking=False,
         )
         surplus_w = round(-_p1_watts())
+        hass.data[DOMAIN]["session_start_surplus"] = surplus_w
         await hass.services.async_call(
             "notify", "persistent_notification",
             {
@@ -324,7 +349,7 @@ def _setup_automation_logic(
         _timers["off"] = None
         if not _automation_active():
             return
-        if _p1_watts() <= -min_surplus:
+        if _p1_watts() <= -_live_min_surplus():
             _LOGGER.debug("SolarCharge: turn-off timer verlopen maar overschot hersteld")
             return
         if _charger_state() == "off":
@@ -333,7 +358,7 @@ def _setup_automation_logic(
         # Sessieduur berekenen
         duration_mins = 0
         start_iso = ""
-        start_state = hass.states.get(SESSION_START)
+        start_state = hass.states.get(eid_session_start)
         if start_state and start_state.state not in ("", "unknown", "unavailable"):
             start_iso = start_state.state
             try:
@@ -352,31 +377,48 @@ def _setup_automation_logic(
         stop_iso = datetime.now().isoformat()
         await hass.services.async_call(
             "text", "set_value",
-            {"entity_id": SESSION_STOP, "value": stop_iso},
+            {"entity_id": eid_session_stop, "value": stop_iso},
             blocking=False,
         )
 
-        if duration_mins > 0 and hass.states.get(SESSION_MINS) is not None:
+        if duration_mins > 0 and hass.states.get(eid_session_mins) is not None:
             await hass.services.async_call(
                 "number", "set_value",
-                {"entity_id": SESSION_MINS, "value": duration_mins},
+                {"entity_id": eid_session_mins, "value": duration_mins},
                 blocking=False,
             )
 
-        for entity_id in [ENERGY_TODAY, ENERGY_TOTAL]:
-            if hass.states.get(entity_id) is not None:
+        for eid_e, cur_kwh in [(eid_energy_today, kwh), (eid_energy_total, kwh)]:
+            cur = _float_state(eid_e)
+            if cur is not None:
                 await hass.services.async_call(
                     "number", "set_value",
-                    {"entity_id": entity_id, "value": round(_float_state(entity_id) + kwh, 3)},
+                    {"entity_id": eid_e, "value": round(cur + cur_kwh, 3)},
                     blocking=False,
                 )
 
-        if hass.states.get(ENERGY_BATT) is not None:
+        cur_batt = _float_state(eid_energy_batt)
+        if cur_batt is not None:
             await hass.services.async_call(
                 "number", "set_value",
-                {"entity_id": ENERGY_BATT, "value": round(_float_state(ENERGY_BATT) + kwh_batt, 3)},
+                {"entity_id": eid_energy_batt, "value": round(cur_batt + kwh_batt, 3)},
                 blocking=False,
             )
+
+        # Sla sessie op in HA storage (ook als het panel niet open is)
+        start_surplus = hass.data.get(DOMAIN, {}).pop("session_start_surplus", 0)
+        noplug_threshold_w = int(cfg.get("noplug_threshold_w", 50))
+        noplug = _charger_watts() < noplug_threshold_w and duration_mins > 0
+        if duration_mins > 0:
+            await async_save_session(hass, {
+                "startIso": start_iso,
+                "stopIso": stop_iso,
+                "durMins": duration_mins,
+                "kwhMuur": round(kwh, 3),
+                "kwhAccu": round(kwh_batt, 3),
+                "startSurplus": start_surplus,
+                "status": "noplug" if noplug else "ok",
+            })
 
         await hass.services.async_call(
             "notify", "persistent_notification",
@@ -427,11 +469,11 @@ def _setup_automation_logic(
 
     async def _daily_reset(now: datetime) -> None:
         """Reset dagelijkse energie-tellers om middernacht."""
-        for entity_id in [ENERGY_TODAY, ENERGY_BATT]:
-            if hass.states.get(entity_id) is not None:
+        for eid_e in [eid_energy_today, eid_energy_batt]:
+            if hass.states.get(eid_e) is not None:
                 await hass.services.async_call(
                     "number", "set_value",
-                    {"entity_id": entity_id, "value": 0},
+                    {"entity_id": eid_e, "value": 0},
                     blocking=False,
                 )
         _LOGGER.info("SolarCharge: dagelijkse reset uitgevoerd")
@@ -454,7 +496,7 @@ def _setup_automation_logic(
             _LOGGER.debug("SolarCharge: automatisering uitgeschakeld, timers geannuleerd")
 
     unsub_p1   = async_track_state_change_event(hass, [p1_sensor], _on_p1_change)
-    unsub_auto = async_track_state_change_event(hass, [AUTOMATION_BOOL], _on_automation_toggle)
+    unsub_auto = async_track_state_change_event(hass, [eid_automation], _on_automation_toggle)
     unsub_midnight = async_track_time_change(hass, _daily_reset, hour=0, minute=0, second=0)
 
     _LOGGER.info(

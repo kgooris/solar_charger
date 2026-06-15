@@ -279,22 +279,37 @@ class SolarCarChargerOptionsFlow(config_entries.OptionsFlow):
             # Sla op als options — overschrijft vorige opties, behoudt originele data
             return self.async_create_entry(title="", data=self._data)
 
+        # Lees huidige waarden uit de entiteitstoestanden (kunnen afwijken van entry.options
+        # als de gebruiker ze via het panel gewijzigd heeft)
+        from homeassistant.helpers import entity_registry as er
+        registry = er.async_get(self.hass)
+
+        def _live(uid: str, conf_key: str, default: float) -> float:
+            entity_id = registry.async_get_entity_id("number", DOMAIN, uid) or f"number.{uid}"
+            state = self.hass.states.get(entity_id)
+            if state and state.state not in (None, "unknown", "unavailable"):
+                try:
+                    return float(state.state)
+                except ValueError:
+                    pass
+            return self._data.get(conf_key, default)
+
         schema = vol.Schema({
             vol.Required(
                 CONF_MIN_SURPLUS,
-                default=self._data.get(CONF_MIN_SURPLUS, DEFAULT_MIN_SURPLUS),
+                default=_live("solar_charger_min_surplus", CONF_MIN_SURPLUS, DEFAULT_MIN_SURPLUS),
             ): _number_selector(0, 5000, 50, "W"),
             vol.Required(
                 CONF_DELAY_ON,
-                default=self._data.get(CONF_DELAY_ON, DEFAULT_DELAY_ON),
+                default=_live("solar_charger_delay_on", CONF_DELAY_ON, DEFAULT_DELAY_ON),
             ): _number_selector(30, 600, 30, "s"),
             vol.Required(
                 CONF_DELAY_OFF,
-                default=self._data.get(CONF_DELAY_OFF, DEFAULT_DELAY_OFF),
+                default=_live("solar_charger_delay_off", CONF_DELAY_OFF, DEFAULT_DELAY_OFF),
             ): _number_selector(30, 600, 30, "s"),
             vol.Required(
                 CONF_EFFICIENCY,
-                default=self._data.get(CONF_EFFICIENCY, DEFAULT_EFFICIENCY),
+                default=_live("solar_charger_efficiency", CONF_EFFICIENCY, DEFAULT_EFFICIENCY),
             ): _number_selector(70, 100, 1, "%"),
         })
         return self.async_show_form(
