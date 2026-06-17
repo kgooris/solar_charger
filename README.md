@@ -27,7 +27,7 @@ Net to grid → only 400 W wasted
 ```
 
 ---
-
+![alt text](image.png)
 ## What It Does
 
 ### Automatic surplus charging
@@ -252,7 +252,7 @@ Netto naar net → slechts 400 W verspild
 ```
 
 ---
-
+![alt text](image.png)
 ## Wat het doet
 
 ### Automatisch laden op overschot
