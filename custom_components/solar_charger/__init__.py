@@ -238,6 +238,15 @@ def _setup_automation_logic(
     def _eid(uid: str, domain: str, fallback: str) -> str:
         return registry.async_get_entity_id(domain, DOMAIN, uid) or fallback
 
+    # Notificatieteksten op basis van de HA-taalinstelling
+    _en = getattr(hass.config, "language", "nl").startswith("en")
+    _TXT = {
+        "title_start": "Battery charging (SolarCharge)" if _en else "Batterij laden (SolarCharge)",
+        "msg_start":   "Started: {time} · Solar surplus: {w} W" if _en else "Gestart: {time} · Zonne-overschot: {w} W",
+        "title_stop":  "Battery charging stopped (SolarCharge)" if _en else "Batterij laden gestopt (SolarCharge)",
+        "msg_stop":    "Stopped: {time} · {mins} min · {kwh} kWh charged" if _en else "Gestopt: {time} · {mins} min · {kwh} kWh geladen",
+    }
+
     # Resolve actual entity IDs from the registry (robust against reinstall suffix changes)
     eid_automation  = _eid("solar_charger_automation_enabled",       "switch", AUTOMATION_BOOL)
     eid_session_start = _eid("solar_charger_session_start",          "text",   SESSION_START)
@@ -337,8 +346,8 @@ def _setup_automation_logic(
         await hass.services.async_call(
             "notify", "persistent_notification",
             {
-                "title": "Auto laden gestart",
-                "message": f"Zonne-overschot: {surplus_w} W · Gestart: {datetime.now().strftime('%H:%M')}",
+                "title": _TXT["title_start"],
+                "message": _TXT["msg_start"].format(time=datetime.now().strftime("%H:%M"), w=surplus_w),
             },
             blocking=False,
         )
@@ -423,8 +432,8 @@ def _setup_automation_logic(
         await hass.services.async_call(
             "notify", "persistent_notification",
             {
-                "title": "Auto laden gestopt",
-                "message": f"Gestopt om {datetime.now().strftime('%H:%M')} · {duration_mins} min · {kwh} kWh geladen",
+                "title": _TXT["title_stop"],
+                "message": _TXT["msg_stop"].format(time=datetime.now().strftime("%H:%M"), mins=duration_mins, kwh=kwh),
             },
             blocking=False,
         )

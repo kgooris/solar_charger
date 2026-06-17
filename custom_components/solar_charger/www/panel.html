@@ -65,8 +65,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tab-bar{display:flex;background:var(--card);border-bottom:1px solid var(--border);padding:0 1.25rem;position:sticky;top:0;z-index:10;align-items:stretch}
 .tab{padding:10px 16px;font-size:13px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:5px}
 .tab.on{color:var(--green-text);border-bottom-color:#16a34a;font-weight:500}
-.tab-content{display:none;padding:0.75rem}
+.tab-content{display:none;padding:0.75rem;max-width:1400px;margin:0 auto}
 .tab-content.on{display:block}
+.chart-canvas-wrap{position:relative;width:100%;height:clamp(160px,28vw,320px)}
+@media(max-width:640px){.chart-canvas-wrap{height:clamp(140px,45vw,220px)}}
 .panel-controls{display:flex;gap:4px;margin-left:auto;align-items:center;padding:0 4px}
 .panel-controls button{background:transparent;border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;color:var(--text3);font-weight:500;transition:background .15s}
 .panel-controls button:hover{background:var(--card2)}
@@ -744,7 +746,7 @@ async function buildOverviewShell() {
         <input type="date" id="c1-to">
         <button class="rbtn" onclick="applyChart1Date()" style="background:var(--green-bg);border-color:var(--green-border);color:var(--green-text)">${t('chart1_apply')}</button>
       </div>
-      <canvas id="chart1" height="110"></canvas>
+      <div class="chart-canvas-wrap"><canvas id="chart1"></canvas></div>
       <div class="zoom-hint">${t('chart1_hint')}</div>
     </div>
 
@@ -1046,7 +1048,7 @@ async function renderChart1() {
       ],
     },
     options: {
-      responsive: true, animation: false,
+      responsive: true, maintainAspectRatio: false, animation: false,
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -1166,7 +1168,7 @@ async function renderHistory() {
         <input type="date" id="c2-to">
         <button class="rbtn" onclick="applyChart2Date()" style="background:var(--green-bg);border-color:var(--green-border);color:var(--green-text)">${t('log_apply')}</button>
       </div>
-      <canvas id="chart2" height="110"></canvas>
+      <div class="chart-canvas-wrap"><canvas id="chart2"></canvas></div>
       <div class="zoom-hint">${t('chart2_hint')}</div>
     </div>
 
@@ -1290,7 +1292,7 @@ function renderChart2(sessions) {
       ],
     },
     options: {
-      responsive: true, animation: false,
+      responsive: true, maintainAspectRatio: false, animation: false,
       plugins: {
         legend: { display: false },
         tooltip: {
