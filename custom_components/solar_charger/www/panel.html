@@ -978,9 +978,10 @@ async function renderChart1() {
     thrD.splice(0, thrD.length, ...sl(thrD));
   }
 
-  // Compute y-axis bounds: always include zero, 10% padding, round to nearest 100 W
-  const _validP1 = p1D.filter(v => v !== null && !isNaN(v));
-  const _rawMax = _validP1.length ? Math.max(..._validP1) : 500;
+  // Compute y-axis bounds: include p1D and carD, always include zero, 10% padding, round to nearest 100 W
+  const _validP1  = p1D.filter(v => v !== null && !isNaN(v));
+  const _validCar = carD.filter(v => v !== null && !isNaN(v));
+  const _rawMax = Math.max(_validP1.length ? Math.max(..._validP1) : 0, _validCar.length ? Math.max(..._validCar) : 0);
   const _rawMin = _validP1.length ? Math.min(..._validP1) : -500;
   const yMax = Math.ceil(Math.max(_rawMax, 0) * 1.1 / 100) * 100 || 500;
   const yMin = Math.floor(Math.min(_rawMin, 0) * 1.1 / 100) * 100 || -500;
