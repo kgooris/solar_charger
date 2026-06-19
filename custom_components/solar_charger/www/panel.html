@@ -978,6 +978,13 @@ async function renderChart1() {
     thrD.splice(0, thrD.length, ...sl(thrD));
   }
 
+  // Compute y-axis bounds: always include zero, 10% padding, round to nearest 100 W
+  const _validP1 = p1D.filter(v => v !== null && !isNaN(v));
+  const _rawMax = _validP1.length ? Math.max(..._validP1) : 500;
+  const _rawMin = _validP1.length ? Math.min(..._validP1) : -500;
+  const yMax = Math.ceil(Math.max(_rawMax, 0) * 1.1 / 100) * 100 || 500;
+  const yMin = Math.floor(Math.min(_rawMin, 0) * 1.1 / 100) * 100 || -500;
+
   const canvas = document.getElementById('chart1');
   if (!canvas) return;
   if (chart1) { chart1.destroy(); chart1 = null; }
@@ -1083,6 +1090,8 @@ async function renderChart1() {
           ticks: { color: tickColor(), font: { size: 10 }, maxTicksLimit: 8 },
         },
         y: {
+          min: yMin,
+          max: yMax,
           grid: {
             color: ctx => ctx.tick.value === 0 ? gridZero() : gridColor(),
             lineWidth: ctx => ctx.tick.value === 0 ? 2 : 1,
