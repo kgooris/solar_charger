@@ -945,10 +945,18 @@ async function renderChart1() {
     p1D.forEach(() => carD.push(null));
   }
 
-  // Pas P1 aan: trek laadvermogen af zodat de lijn "huisverbruik excl lading" toont
+  // Pas P1 aan: trek laadvermogen af zodat de lijn "huisverbruik excl lading" toont.
+  // Alleen aftrekken als buurpunt ook laadt (>100 W) om spikes bij aan/uit-schakelen te voorkomen.
   if (cfg.charger_power_sensor) {
     for (let i = 0; i < p1D.length; i++) {
-      if (carD[i] !== null) p1D[i] -= carD[i];
+      const car = carD[i];
+      if (car !== null && car > 100) {
+        const prev = i > 0 ? carD[i - 1] : null;
+        const next = i < carD.length - 1 ? carD[i + 1] : null;
+        if ((prev !== null && prev > 100) || (next !== null && next > 100)) {
+          p1D[i] -= car;
+        }
+      }
     }
   }
 
@@ -990,20 +998,8 @@ async function renderChart1() {
   if (!canvas) return;
   if (chart1) { chart1.destroy(); chart1 = null; }
 
-  // Plugin: synchronise right axis range with left axis so 100 W aligns on both sides
-  const rightAxisSyncPlugin = {
-    id: 'rightAxisSync',
-    afterDataLimits(chart, args) {
-      if (args.scale.id !== 'yright') return;
-      const y = chart.scales.y;
-      if (!y) return;
-      args.scale.min = y.min;
-      args.scale.max = y.max;
-    },
-  };
-
   chart1 = new Chart(canvas, {
-    plugins: [rightAxisSyncPlugin],
+    plugins: [],
     type: 'line',
     data: {
       labels,
@@ -1105,6 +1101,8 @@ async function renderChart1() {
           title: { display: true, text: t('chart1_yaxis'), color: axisColor(), font: { size: 10 } },
         },
         yright: {
+          min: yMin,
+          max: yMax,
           position: 'right',
           grid: { display: false },
           ticks: { color: 'rgba(22,163,74,0.6)', font: { size: 10 }, callback: v => v > 0 ? `${Math.round(v)}W` : '' },
