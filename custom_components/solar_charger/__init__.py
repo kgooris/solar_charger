@@ -353,18 +353,13 @@ def _setup_automation_logic(
         )
         _LOGGER.info("SolarCharge: lader ingeschakeld (overschot %s W)", surplus_w)
 
-    async def _do_turn_off(now=None) -> None:
-        """Definitieve check, sessie-energie bijwerken en lader uitschakelen."""
-        _timers["off"] = None
-        if not _automation_active():
-            return
-        if _p1_watts() - _charger_watts() <= -_live_min_surplus():
-            _LOGGER.debug("SolarCharge: turn-off timer verlopen maar overschot hersteld")
-            return
-        if _charger_state() == "off":
-            return
+    async def _do_session_end(external: bool = False) -> None:
+        """Sessie afsluiten: duur/energie berekenen, entiteiten bijwerken, opslaan, melden.
 
-        # Sessieduur berekenen
+        external=True: lader is extern uitgeschakeld (bijv. BMS accu vol).
+                       Gebruik de laatst bekende ladervermogens als de sensor nu 0 leest.
+        external=False: automatisering heeft de lader uitgeschakeld.
+        """
         duration_mins = 0
         start_iso = ""
         start_state = hass.states.get(eid_session_start)
@@ -376,13 +371,17 @@ def _setup_automation_logic(
             except ValueError:
                 pass
 
-        # Energie berekenen op basis van vermogen en duur
-        kwh = round(_charger_watts() / 1000 * duration_mins / 60, 3) if duration_mins > 0 else 0.0
+        # Bij externe uitschakeling kan de vermogenssensor al 0 lezen; gebruik dan de
+        # laatste bekende waarde die werd opgeslagen in _on_p1_change.
+        watts = _charger_watts()
+        if external and watts < 100:
+            watts = hass.data.get(DOMAIN, {}).get(
+                "_last_charger_watts", cfg.get("max_charge_kw", 2.3) * 1000
+            )
+
+        kwh = round(watts / 1000 * duration_mins / 60, 3) if duration_mins > 0 else 0.0
         kwh_batt = round(kwh * efficiency, 3)
 
-        await hass.services.async_call(
-            "switch", "turn_off", {"entity_id": switch}, blocking=False
-        )
         stop_iso = datetime.now().isoformat()
         await hass.services.async_call(
             "text", "set_value",
@@ -414,10 +413,10 @@ def _setup_automation_logic(
                 blocking=False,
             )
 
-        # Sla sessie op in HA storage (ook als het panel niet open is)
         start_surplus = hass.data.get(DOMAIN, {}).pop("session_start_surplus", 0)
         noplug_threshold_w = int(cfg.get("noplug_threshold_w", 50))
-        noplug = _charger_watts() < noplug_threshold_w and duration_mins > 0
+        # Extern uitgeschakeld = accu vol = geslaagde sessie; noplug-check alleen bij automaat
+        noplug = (not external) and watts < noplug_threshold_w and duration_mins > 0
         if duration_mins > 0:
             await async_save_session(hass, {
                 "startIso": start_iso,
@@ -439,6 +438,24 @@ def _setup_automation_logic(
         )
         _LOGGER.info("SolarCharge: lader uitgeschakeld (%s min, %s kWh)", duration_mins, kwh)
 
+    async def _do_turn_off(now=None) -> None:
+        """Definitieve check, lader uitschakelen en sessie afsluiten."""
+        _timers["off"] = None
+        if not _automation_active():
+            return
+        if _p1_watts() - _charger_watts() <= -_live_min_surplus():
+            _LOGGER.debug("SolarCharge: turn-off timer verlopen maar overschot hersteld")
+            return
+        if _charger_state() == "off":
+            return
+
+        # Markeer dat WIJ de schakelaar uitschakelen zodat _on_switch_change het negeert
+        hass.data.setdefault(DOMAIN, {})["_auto_off"] = True
+        await hass.services.async_call(
+            "switch", "turn_off", {"entity_id": switch}, blocking=False
+        )
+        await _do_session_end(external=False)
+
     # ── event handlers ────────────────────────────────────────────────────────
 
     @callback
@@ -453,8 +470,12 @@ def _setup_automation_logic(
 
         p1 = _p1_watts()
         charger_on = _charger_state() == "on"
+        # Sla het laatste zinvolle laadvermogen op voor gebruik bij externe uitschakeling
+        charger_w = _charger_watts()
+        if charger_w > 100:
+            hass.data.setdefault(DOMAIN, {})["_last_charger_watts"] = charger_w
         # Trek laadvermogen af zodat de eigen consumptie van de lader geen turn-off triggert
-        p1_adj = p1 - _charger_watts()
+        p1_adj = p1 - charger_w
 
         cur_min_surplus = _live_min_surplus()
         if p1_adj <= -cur_min_surplus:
@@ -506,12 +527,34 @@ def _setup_automation_logic(
             _cancel_timers()
             _LOGGER.debug("SolarCharge: automatisering uitgeschakeld, timers geannuleerd")
 
-    unsub_p1   = async_track_state_change_event(hass, [p1_sensor], _on_p1_change)
-    unsub_auto = async_track_state_change_event(hass, [eid_automation], _on_automation_toggle)
+    @callback
+    def _on_switch_change(event) -> None:
+        """Detecteer externe uitschakeling van de lader (bijv. BMS bij volle accu).
+
+        Als de schakelaar van 'on' naar 'off' gaat zonder dat de automatisering dit
+        zelf heeft gedaan, sluit dan de sessie correct af.
+        """
+        new_state = event.data.get("new_state")
+        old_state = event.data.get("old_state")
+        if new_state is None or old_state is None:
+            return
+        if new_state.state != "off" or old_state.state != "on":
+            return
+        # Wij hebben de schakelaar zelf uitgeschakeld — vlag wissen en doorgaan
+        if hass.data.get(DOMAIN, {}).pop("_auto_off", False):
+            return
+        # Externe uitschakeling: timers annuleren en sessie opslaan
+        _cancel_timers()
+        _LOGGER.info("SolarCharge: lader extern uitgeschakeld — sessie afsluiten")
+        hass.async_create_task(_do_session_end(external=True))
+
+    unsub_p1     = async_track_state_change_event(hass, [p1_sensor], _on_p1_change)
+    unsub_auto   = async_track_state_change_event(hass, [eid_automation], _on_automation_toggle)
+    unsub_switch = async_track_state_change_event(hass, [switch], _on_switch_change)
     unsub_midnight = async_track_time_change(hass, _daily_reset, hour=0, minute=0, second=0)
 
     _LOGGER.info(
         "SolarCharge automatisering actief — min_surplus=%sW delay_on=%ss delay_off=%ss",
         min_surplus, delay_on, delay_off,
     )
-    return [unsub_p1, unsub_auto, unsub_midnight, _cancel_timers]
+    return [unsub_p1, unsub_auto, unsub_switch, unsub_midnight, _cancel_timers]
